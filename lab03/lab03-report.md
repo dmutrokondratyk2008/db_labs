@@ -33,7 +33,7 @@ CREATE DATABASE library_lab3;
 docker exec -it lab3-pg psql -U postgres -d library_lab3
 ```
 
-![Підключення до бази library_lab3 (psql 16.15 у контейнері lab3-pg)](screenshots/lab03/1.png)
+![Підключення до бази library_lab3 (psql 16.15 у контейнері lab3-pg)](../screenshots/lab03/1.png)
 
 Для кроків з паралельним доступом (блокування, рівні ізоляції) відкривалося друге вікно `psql` до тієї ж бази. Вікна позначено в промпті як `T1` і `T2` командою `\set PROMPT1 'T1 %/%R%x%# '`. Значення `NULL` у виводі `psql` відображається порожньою клітинкою.
 
@@ -110,11 +110,11 @@ CREATE TABLE
 CREATE TABLE
 ```
 
-![Створення чотирьох таблиць](screenshots/lab03/2.png)
+![Створення чотирьох таблиць](../screenshots/lab03/2.png)
 
 Перевірка структури командами `\dt` і `\d books`: у базі 4 таблиці, у `books` видно первинний ключ, унікальний ключ по `isbn`, чотири перевірки `CHECK` і зовнішній ключ на `authors` з `ON DELETE RESTRICT`, а також посилання на `books` з боку `lendings`.
 
-![Перелік таблиць і структура books](screenshots/lab03/3.png)
+![Перелік таблиць і структура books](../screenshots/lab03/3.png)
 
 #### Крок 2. Додавання тестових даних
 
@@ -145,7 +145,7 @@ VALUES
 
 Сервер відповів `INSERT 0 5`, `INSERT 0 5` і `INSERT 0 4`.
 
-![Вставка даних](screenshots/lab03/4.png)
+![Вставка даних](../screenshots/lab03/4.png)
 
 Перевірка вставлених даних:
 
@@ -182,7 +182,7 @@ SELECT reader_id, first_name, last_name, status FROM readers ORDER BY reader_id;
 
 Значення `created_at` виставлено за замовчуванням.
 
-![Перевірка вставлених даних](screenshots/lab03/5.png)
+![Перевірка вставлених даних](../screenshots/lab03/5.png)
 
 #### Крок 3. Безпечне оновлення записів
 
@@ -218,11 +218,11 @@ UPDATE 1
 
 Умова `available_copies > 0` не дозволила б піти нижче нуля.
 
-![Безпечне оновлення, перше виконання](screenshots/lab03/6.png)
+![Безпечне оновлення, перше виконання](../screenshots/lab03/6.png)
 
 Цей самий блок було виконано ще раз (див. розділ «Особливості виконання»), тому значення зменшилось до 6.
 
-![Безпечне оновлення, повторне виконання](screenshots/lab03/7.png)
+![Безпечне оновлення, повторне виконання](../screenshots/lab03/7.png)
 
 Далі показано оновлення за умовою, що зачіпає кілька рядків: спершу рахуємо, скільки рядків потрапить під умову, а тоді виконуємо `UPDATE ... RETURNING`.
 
@@ -249,7 +249,7 @@ UPDATE 1
 
 Без `WHERE` було б змінено всі 5 книг.
 
-![UPDATE з RETURNING](screenshots/lab03/8.png)
+![UPDATE з RETURNING](../screenshots/lab03/8.png)
 
 #### Крок 4. Операції з транзакціями
 
@@ -304,7 +304,7 @@ COMMIT
 
 Транзакція забезпечила атомарність видачі книги: запис у `lendings` і зменшення `available_copies` виконалися як єдине ціле. Якби одна з операцій завершилась помилкою, обидві було б скасовано. Значення 5 (а не 7) пояснюється повторним виконанням кроку 1.3 (див. «Особливості виконання»).
 
-![Транзакція видачі книги](screenshots/lab03/9.png)
+![Транзакція видачі книги](../screenshots/lab03/9.png)
 
 #### Крок 5. Демонстрація ROLLBACK
 
@@ -318,7 +318,7 @@ DELETE FROM authors WHERE author_id = 1;
 
 Отримано помилку: `update or delete on table "authors" violates foreign key constraint "books_author_id_fkey" on table "books"`, `Key (author_id)=(1) is still referenced from table "books"`.
 
-![Помилка зовнішнього ключа](screenshots/lab03/10.png)
+![Помилка зовнішнього ключа](../screenshots/lab03/10.png)
 
 Після помилки транзакція переходить у стан «перервана» (у промпті `=!#`): будь-яка наступна команда повертає `current transaction is aborted, commands ignored until end of transaction block`.
 
@@ -326,7 +326,7 @@ DELETE FROM authors WHERE author_id = 1;
 SELECT 1;
 ```
 
-![Транзакція перервана](screenshots/lab03/11.png)
+![Транзакція перервана](../screenshots/lab03/11.png)
 
 Транзакцію скасовано:
 
@@ -337,7 +337,7 @@ SELECT * FROM authors WHERE author_id = 1;
 
 Автор Тарас Шевченко залишився в таблиці, промпт повернувся до `=#`.
 
-![Результат ROLLBACK](screenshots/lab03/12.png)
+![Результат ROLLBACK](../screenshots/lab03/12.png)
 
 **Сценарій Б. Порушення CHECK усередині транзакції.** Показано, що відкочується не лише невдала команда, а й усі попередні, виконані в цій самій транзакції:
 
@@ -354,7 +354,7 @@ UPDATE books SET available_copies = available_copies - 5 WHERE book_id = 5;
 
 Усередині транзакції `INSERT` видно (`lendings_in_transaction = 1`), а `UPDATE` завершується помилкою `new row for relation "books" violates check constraint "books_available_copies_check"` (доступно було 4 примірники, а списується 5, тому виходить -1).
 
-![Порушення CHECK](screenshots/lab03/13.png)
+![Порушення CHECK](../screenshots/lab03/13.png)
 
 ```sql
 ROLLBACK;
@@ -365,7 +365,7 @@ SELECT book_id, title, available_copies FROM books WHERE book_id = 5;
 
 Після відкату `lendings_after_rollback = 0`, а в книги 5 лишилось 4 примірники. Тобто `INSERT` у видачі теж скасувався.
 
-![Результат відкату](screenshots/lab03/14.png)
+![Результат відкату](../screenshots/lab03/14.png)
 
 **Висновок:**
 
@@ -391,7 +391,7 @@ HAVING COUNT(l.lending_id) = 0 AND r.status = 'Inactive';
 
 Жодного читача зі статусом `Inactive` без активних видач ще немає.
 
-![Перевірка перед видаленням](screenshots/lab03/15.png)
+![Перевірка перед видаленням](../screenshots/lab03/15.png)
 
 Для демонстрації додано тестового читача зі статусом `Inactive`:
 
@@ -407,7 +407,7 @@ RETURNING reader_id;
 |---|
 | 5 |
 
-![Тестовий читач](screenshots/lab03/16.png)
+![Тестовий читач](../screenshots/lab03/16.png)
 
 Видалення з перевіркою, що в читача немає незакритих видач:
 
@@ -434,7 +434,7 @@ DELETE 1
 
 Контрольний `COUNT(*)` повернув `0`: запис видалено.
 
-![Безпечне видалення](screenshots/lab03/17.png)
+![Безпечне видалення](../screenshots/lab03/17.png)
 
 ### Рівень 2. Розширена функціональність
 
@@ -468,7 +468,7 @@ CREATE TABLE audit_log (
 
 Структуру обох таблиць перевірено командами `\d reservations` і `\d audit_log`:
 
-![Створення таблиць reservations і audit_log та їх структура](screenshots/lab03/18.png)
+![Створення таблиць reservations і audit_log та їх структура](../screenshots/lab03/18.png)
 
 #### Крок 2. Складні транзакції
 
@@ -482,7 +482,7 @@ RETURNING reservation_id;
 
 Створено бронювання `reservation_id = 1`.
 
-![Створення бронювання](screenshots/lab03/19.png)
+![Створення бронювання](../screenshots/lab03/19.png)
 
 Повернення книги виконується однією транзакцією з чотирьох операцій над двома таблицями: закрити видачу, повернути примірник у наявність, знайти першу активну бронь, позначити її виконаною.
 
@@ -535,7 +535,7 @@ COMMIT;
 COMMIT
 ```
 
-![Транзакція повернення книги](screenshots/lab03/20.png)
+![Транзакція повернення книги](../screenshots/lab03/20.png)
 
 Підсумкова перевірка зв'язаних даних:
 
@@ -561,7 +561,7 @@ WHERE l.lending_id = 1;
 
 Складна транзакція виконала чотири взаємопов'язані операції над двома таблицями. Завдяки атомарності всі зміни або застосовуються разом, або не застосовуються взагалі, що зберігає консистентність бізнес-процесу повернення книги.
 
-![Перевірка результату повернення](screenshots/lab03/21.png)
+![Перевірка результату повернення](../screenshots/lab03/21.png)
 
 #### Крок 3. Використання SAVEPOINT
 
@@ -587,7 +587,7 @@ SAVEPOINT after_first_book;
 
 Додано автора `author_id = 6` та книгу «Земля» (`book_id = 6`), поставлено дві точки збереження.
 
-![Початок транзакції з SAVEPOINT](screenshots/lab03/22.png)
+![Початок транзакції з SAVEPOINT](../screenshots/lab03/22.png)
 
 Спроба вставити книгу з тим самим ISBN:
 
@@ -600,7 +600,7 @@ VALUES ('978-966-03-4566-7', 'Інша книга',
 
 Помилка: `duplicate key value violates unique constraint "books_isbn_key"`, `Key (isbn)=(978-966-03-4566-7) already exists`. Транзакція перейшла в стан `=!#`.
 
-![Помилка дубліката ISBN](screenshots/lab03/23.png)
+![Помилка дубліката ISBN](../screenshots/lab03/23.png)
 
 Відкат до точки `after_first_book` повертає транзакцію в робочий стан без втрати автора й першої книги; далі додається коректна друга книга і виконується `COMMIT`:
 
@@ -624,7 +624,7 @@ ORDER BY b.book_id;
 
 У результаті в базі автор Ольга Кобилянська і дві книги: «Земля» (`book_id = 6`) та «Царівна» (`book_id = 8`). Номер 7 пропущено, бо невдала вставка з дублікатом теж «з'їла» значення з послідовності (послідовності не відкочуються разом з транзакцією).
 
-![Результат після відкату до SAVEPOINT](screenshots/lab03/24.png)
+![Результат після відкату до SAVEPOINT](../screenshots/lab03/24.png)
 
 **Висновок:**
 
@@ -658,7 +658,7 @@ COMMIT;
 
 Створено автора 7, книгу 9 і бронювання 2.
 
-![Створення тестових даних](screenshots/lab03/25.png)
+![Створення тестових даних](../screenshots/lab03/25.png)
 
 Перевірка зв'язку, видалення книги та перевірка каскаду:
 
@@ -675,7 +675,7 @@ SELECT * FROM reservations WHERE reader_id = 1;
 
 До видалення бронювання 2 було активним. Після `DELETE 1` запит до бронювань читача 1 повернув `(0 rows)`: бронювання видалилось автоматично разом із книгою.
 
-![Каскадне видалення бронювання](screenshots/lab03/26.png)
+![Каскадне видалення бронювання](../screenshots/lab03/26.png)
 
 **RESTRICT.** Автора без книг видалено успішно, а автора з книгами (Кобилянська) видалити не вдалося:
 
@@ -686,7 +686,7 @@ DELETE FROM authors WHERE last_name = 'Кобилянська';
 
 Перший запит: `DELETE 1`. Другий: помилка `violates foreign key constraint "books_author_id_fkey"`, `Key (author_id)=(6) is still referenced from table "books"`.
 
-![Поведінка RESTRICT](screenshots/lab03/27.png)
+![Поведінка RESTRICT](../screenshots/lab03/27.png)
 
 **Інші варіанти зовнішніх ключів.** Демонстраційні таблиці з `ON UPDATE CASCADE`, `ON DELETE SET NULL` і `ON DELETE SET DEFAULT`:
 
@@ -720,7 +720,7 @@ SELECT * FROM demo_editions ORDER BY edition_id;
 | `DELETE` видавця 20 (`ON DELETE SET NULL`) | у «Видання 2» `publisher_id = NULL` |
 | `DELETE` категорії 2 (`ON DELETE SET DEFAULT`) | в обох видань `category_id = 1` (значення за замовчуванням) |
 
-![Демонстрація типів зовнішніх ключів (порожня клітинка = NULL)](screenshots/lab03/28.png)
+![Демонстрація типів зовнішніх ключів (порожня клітинка = NULL)](../screenshots/lab03/28.png)
 
 Демонстраційні таблиці після перевірки видалено:
 
@@ -728,7 +728,7 @@ SELECT * FROM demo_editions ORDER BY edition_id;
 DROP TABLE demo_editions, demo_publishers, demo_categories;
 ```
 
-![Видалення демонстраційних таблиць](screenshots/lab03/29.png)
+![Видалення демонстраційних таблиць](../screenshots/lab03/29.png)
 
 **Аналіз:**
 
@@ -801,7 +801,7 @@ GROUP BY operation;
 
 Тригер коректно записує всі операції з таблицею `books` в `audit_log`. Зберігаються і старі, і нові значення, що дозволяє відстежити повну історію змін. Час операції та користувач фіксуються автоматично.
 
-![Тригери аудиту](screenshots/lab03/30.png)
+![Тригери аудиту](../screenshots/lab03/30.png)
 
 #### Крок 6. Блокування записів
 
@@ -814,7 +814,7 @@ BEGIN;
 SELECT book_id, title, available_copies FROM books WHERE book_id = 1 FOR UPDATE;
 ```
 
-![Блокування рядка в T1 (9 примірників)](screenshots/lab03/69.png)
+![Блокування рядка в T1 (9 примірників)](../screenshots/lab03/69.png)
 
 T1 бачить 9 примірників і тримає блокування. **T2** спробував отримати блокування без очікування (`NOWAIT`) і одразу отримав помилку `could not obtain lock on row in relation "books"`:
 
@@ -831,7 +831,7 @@ SELECT book_id, title, available_copies FROM books WHERE book_id = 1 FOR UPDATE;
 
 На скриншоті видно обидві дії T2: помилку `NOWAIT` і наступний `FOR UPDATE`, який не повертає результату, бо чекає на T1:
 
-![T2: помилка NOWAIT і запит, що очікує блокування](screenshots/lab03/60.png)
+![T2: помилка NOWAIT і запит, що очікує блокування](../screenshots/lab03/60.png)
 
 Із T1 переглянуто стан сесій у `pg_stat_activity`: сесія T2 (`pid = 46`) активна й очікує `Lock / transactionid`. Після цього T1 оновив рядок і зафіксував транзакцію:
 
@@ -844,11 +844,11 @@ UPDATE books SET available_copies = available_copies + 1 WHERE book_id = 1 RETUR
 COMMIT;
 ```
 
-![Очікування блокування та COMMIT у T1](screenshots/lab03/70.png)
+![Очікування блокування та COMMIT у T1](../screenshots/lab03/70.png)
 
 Одразу після `COMMIT` у T1 запит у T2 розблокувався й повернув уже оновлене значення (10), тобто T2 побачив зміни T1 і не працював зі застарілими даними:
 
-![T2 розблоковано](screenshots/lab03/71.png)
+![T2 розблоковано](../screenshots/lab03/71.png)
 
 T2 виконав свою зміну і завершив транзакцію:
 
@@ -874,7 +874,7 @@ T2: UPDATE available_copies = 8
 Результат: оновлення T1 втрачено (у базі 8 замість 9)
 ```
 
-![Оновлення в T2 після розблокування](screenshots/lab03/72.png)
+![Оновлення в T2 після розблокування](../screenshots/lab03/72.png)
 
 ### Рівень 3. Творче розширення
 
@@ -968,7 +968,7 @@ ORDER BY version_number;
 
 Інтервал дії кожної версії закінчується в момент початку наступної, поточна версія має `valid_to = NULL`.
 
-![Історія версій книги](screenshots/lab03/73.png)
+![Історія версій книги](../screenshots/lab03/73.png)
 
 Отримання історичного стану на момент створення версії 2:
 
@@ -983,11 +983,11 @@ SELECT jsonb_pretty(get_book_version(
 
 Функція повернула стан до другого оновлення: `available_copies = 8`, `genre = Тест`. Це підтверджує, що можна відновити вигляд запису на будь-який момент.
 
-![Історичний стан книги](screenshots/lab03/34.png)
+![Історичний стан книги](../screenshots/lab03/34.png)
 
 Структура `books` після створення всіх тригерів (`\d books`): тригер версіонування `book_versioning_trigger`, тригер аудиту `books_audit_trigger` і тригер автоматичних контрольних точок `books_auto_backup_trigger` (див. крок 5).
 
-![Тригери таблиці books](screenshots/lab03/74.png)
+![Тригери таблиці books](../screenshots/lab03/74.png)
 
 #### Крок 2. Відкладені операції
 
@@ -1082,7 +1082,7 @@ SELECT operation_id, operation_type, status, executed_at FROM scheduled_operatio
 
 Одразу після створення функція повернула 0 (час ще не настав), усі три операції мають статус `Pending`.
 
-![Операції в очікуванні](screenshots/lab03/35.png)
+![Операції в очікуванні](../screenshots/lab03/35.png)
 
 Для автоматичного виконання функцію запущено в циклі засобами `psql` кожні 10 секунд:
 
@@ -1092,7 +1092,7 @@ SELECT execute_scheduled_operations() AS executed \watch 10
 
 Перший запуск (15:12:19) повернув 0, другий (15:12:29), коли настав запланований час, повернув 2 (дві успішні операції).
 
-![Автоматичне виконання через \watch](screenshots/lab03/36.png)
+![Автоматичне виконання через \watch](../screenshots/lab03/36.png)
 
 Перевірка результатів:
 
@@ -1116,7 +1116,7 @@ UPDATE readers SET status = 'Active' WHERE reader_id = 4;
 
 Бронювання 3 отримало статус `Expired`, читач 4 став `Blocked` (після перевірки його повернуто в `Active`). Невідома операція позначена як `Failed` з текстом помилки, решта операцій не постраждали.
 
-![Результати відкладених операцій](screenshots/lab03/37.png)
+![Результати відкладених операцій](../screenshots/lab03/37.png)
 
 #### Крок 3. Складна бізнес-логіка
 
@@ -1177,7 +1177,7 @@ $$ LANGUAGE plpgsql;
 
 Код функції в базі (`\sf extend_lending`):
 
-![Код функції extend_lending](screenshots/lab03/76.png)
+![Код функції extend_lending](../screenshots/lab03/76.png)
 
 **Сценарій 1: успіх.** Читачу 3 видано книгу 4 на 7 днів і продовжено ще на 14:
 
@@ -1192,7 +1192,7 @@ SELECT * FROM extend_lending(
 
 Видача 5 мала термін 2026-10-29, функція повернула `success = t`, `Термін продовжено`, нова дата 2026-11-12.
 
-![Успішне продовження](screenshots/lab03/75.png)
+![Успішне продовження](../screenshots/lab03/75.png)
 
 **Підготовка до сценаріїв 2–4.** Для перевірки відмов використано видачу книги 2 читачем 2 (`lending_id = 3`). Її створено командою:
 
@@ -1229,7 +1229,7 @@ SELECT * FROM extend_lending(1, 7);
 | 3. Прострочена видача | f | У читача є прострочені книги |
 | 4. Повернена видача | f | Видача не знайдена або книга вже повернена |
 
-![Відмови extend_lending](screenshots/lab03/38.png)
+![Відмови extend_lending](../screenshots/lab03/38.png)
 
 Підсумковий стан таблиці `lendings` після всіх сценаріїв:
 
@@ -1246,7 +1246,7 @@ SELECT lending_id, book_id, reader_id, lending_date, due_date, return_date FROM 
 
 Видача 3 призначена для сценаріїв 2–3, видача 4 це створена в сценарії 3 прострочена видача, а видача 5 це успішно продовжена видача зі сценарію 1. Номер 2 пропущено через відкат у кроці 1.5.
 
-![Стан таблиці lendings](screenshots/lab03/80.png)
+![Стан таблиці lendings](../screenshots/lab03/80.png)
 
 #### Крок 4. Система прав доступу
 
@@ -1277,7 +1277,7 @@ GRANT librarian_write TO librarian2;
 GRANT library_admin TO admin1;
 ```
 
-![Ролі та права](screenshots/lab03/39.png)
+![Ролі та права](../screenshots/lab03/39.png)
 
 **librarian1 (тільки читання):** `SELECT` працює, `UPDATE` забороняється.
 
@@ -1290,7 +1290,7 @@ RESET ROLE;
 
 Результат: читання успішне, оновлення завершилось помилкою `permission denied for table books`.
 
-![Перевірка librarian1](screenshots/lab03/40.png)
+![Перевірка librarian1](../screenshots/lab03/40.png)
 
 **librarian2 (читання та запис):** оновлення книги дозволено, видалення автора заборонено.
 
@@ -1303,7 +1303,7 @@ RESET ROLE;
 
 Результат: `UPDATE 1` (доступно стало 5), видалення завершилось помилкою `permission denied for table authors`.
 
-![Перевірка librarian2](screenshots/lab03/41.png)
+![Перевірка librarian2](../screenshots/lab03/41.png)
 
 **admin1 (повні права)** та перевірка журналу аудиту:
 
@@ -1319,7 +1319,7 @@ FROM audit_log WHERE table_name = 'books' ORDER BY log_id DESC LIMIT 3;
 
 Адміністратор вставив і видалив автора (`author_id = 8`). У журналі запис про оновлення книги 1 (`log_id = 9`) має `changed_by = librarian2`, тобто аудит фіксує, хто саме змінив дані.
 
-![Права адміністратора та аудит за ролями](screenshots/lab03/42.png)
+![Права адміністратора та аудит за ролями](../screenshots/lab03/42.png)
 
 #### Крок 5. Контрольні точки та відновлення даних
 
@@ -1403,7 +1403,7 @@ FOR EACH STATEMENT
 EXECUTE FUNCTION auto_backup_before_delete();
 ```
 
-![Створення таблиці, функцій і тригера](screenshots/lab03/43.png)
+![Створення таблиці, функцій і тригера](../screenshots/lab03/43.png)
 
 **Ручна контрольна точка.** Створено точку й перевірено її вміст: у знімку 8 книг і 3 видачі. Стан перед «аварією»: 3 видачі, 0 заблокованих читачів.
 
@@ -1419,7 +1419,7 @@ SELECT (SELECT COUNT(*) FROM lendings) AS lendings,
        (SELECT COUNT(*) FROM readers WHERE status = 'Blocked') AS blocked_readers;
 ```
 
-![Створення контрольної точки](screenshots/lab03/44.png)
+![Створення контрольної точки](../screenshots/lab03/44.png)
 
 **Імітація аварії:** `DELETE` і `UPDATE` без `WHERE`:
 
@@ -1433,7 +1433,7 @@ SELECT (SELECT COUNT(*) FROM lendings) AS lendings,
 
 Видалено 3 видачі (`DELETE 3`), заблоковано всіх 4 читачів (`UPDATE 4`): у таблиці 0 видач і 4 заблоковані.
 
-![Імітація аварії](screenshots/lab03/45.png)
+![Імітація аварії](../screenshots/lab03/45.png)
 
 **Відновлення:**
 
@@ -1446,7 +1446,7 @@ SELECT (SELECT COUNT(*) FROM lendings) AS lendings,
 
 Функція повернула `t`, у таблицях знову 3 видачі й 0 заблокованих читачів, як до аварії.
 
-![Відновлення з контрольної точки](screenshots/lab03/46.png)
+![Відновлення з контрольної точки](../screenshots/lab03/46.png)
 
 **Автоматична контрольна точка.** Тригер сам створює точку перед будь-яким `DELETE` з `books`:
 
@@ -1463,7 +1463,7 @@ FROM backup_points ORDER BY backup_id;
 
 У `backup_points` з'явилась друга точка `auto_before_delete_books` (2026-10-18 15:18:46), створена без втручання користувача.
 
-![Автоматична контрольна точка](screenshots/lab03/47.png)
+![Автоматична контрольна точка](../screenshots/lab03/47.png)
 
 **Контрольна точка за розкладом** (відкладена операція `CREATE_BACKUP`):
 
@@ -1478,7 +1478,7 @@ SELECT backup_id, backup_name, description FROM backup_points ORDER BY backup_id
 
 Функція виконала одну операцію, у `backup_points` тепер три точки, остання `scheduled_checkpoint`.
 
-![Контрольна точка за розкладом](screenshots/lab03/48.png)
+![Контрольна точка за розкладом](../screenshots/lab03/48.png)
 
 #### Крок 6. Інтерфейс перегляду та відкату змін
 
@@ -1581,7 +1581,7 @@ SELECT * FROM get_changes_report(CURRENT_DATE - INTERVAL '30 days');
 
 Представлення показує для кожної зміни тип операції, назву книги, зрозумілий опис (наприклад, «Доступні примірники: 4 → 5») і виконавця (серед записів є зміна від `librarian2`). Звіт за 2026-10-18 містить 11 змін: 3 вставки, 6 оновлень і 2 видалення.
 
-![Історія змін і звіт](screenshots/lab03/49.png)
+![Історія змін і звіт](../screenshots/lab03/49.png)
 
 **Відкат змін за період.** Запам'ятовано момент часу `t0`, після нього зроблено дві «помилкові» зміни (зменшено `available_copies` книги 3 з 7 до 5 і додано непотрібну книгу 16), після чого їх відкочено:
 
@@ -1609,11 +1609,11 @@ SELECT COUNT(*) AS wrong_book FROM books WHERE isbn = '978-966-03-6666-6';
 
 Історія після `t0` містить два записи: `UPDATE` книги 3 («Доступні примірники: 7 → 5») та `INSERT` книги 16. Функція відкотила 2 операції (`reverted_operations = 2`): у книги 3 знову 7 примірників.
 
-![Відкат змін за період](screenshots/lab03/52.png)
+![Відкат змін за період](../screenshots/lab03/52.png)
 
 Книги «Помилкова книга» більше немає (`wrong_book = 0`).
 
-![Перевірка видалення помилкової книги](screenshots/lab03/78.png)
+![Перевірка видалення помилкової книги](../screenshots/lab03/78.png)
 
 #### Додатково: рівні ізоляції транзакцій
 
@@ -1635,11 +1635,11 @@ SELECT available_copies FROM books WHERE book_id = 3;
 
 T2 змінив значення з 7 на 6 і зафіксував його.
 
-![Зміна в T2](screenshots/lab03/67.png)
+![Зміна в T2](../screenshots/lab03/67.png)
 
 T1 до кінця транзакції бачив старе значення 7 (нечитабельне повторне читання не виникає), а після `COMMIT` побачив нове значення 6.
 
-![Читання в T1 до і після COMMIT](screenshots/lab03/66.png)
+![Читання в T1 до і після COMMIT](../screenshots/lab03/66.png)
 
 #### Підсумковий огляд об'єктів бази
 
@@ -1651,11 +1651,11 @@ T1 до кінця транзакції бачив старе значення 7
 
 У базі 9 таблиць (`audit_log`, `authors`, `backup_points`, `books`, `books_versions`, `lendings`, `readers`, `reservations`, `scheduled_operations`), одне представлення (`books_change_history`) і 10 функцій: три тригерні (`auto_backup_before_delete`, `create_book_version`, `log_books_changes`) та сім функцій бізнес-логіки, керування контрольними точками, відкладеними операціями й історією змін.
 
-![Список таблиць](screenshots/lab03/77.png)
+![Список таблиць](../screenshots/lab03/77.png)
 
-![Список представлень](screenshots/lab03/79.png)
+![Список представлень](../screenshots/lab03/79.png)
 
-![Список функцій](screenshots/lab03/56.png)
+![Список функцій](../screenshots/lab03/56.png)
 
 ## Особливості виконання
 
