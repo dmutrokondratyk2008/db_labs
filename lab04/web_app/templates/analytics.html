@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Аналітика{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Аналітика та статистика</h1>
+    <div class="header-actions">
+        <a class="btn btn-light" href="{{ url_for('report_orders_pdf') }}" target="_blank">📄 PDF-звіт</a>
+        <a class="btn btn-light" href="{{ url_for('report_finance_xlsx') }}">📊 Excel-звіт</a>
+    </div>
+</div>
+
+<div class="grid-2">
+    {% for chart in [chart_status, chart_monthly, chart_structure, chart_makes] %}
+    <section class="card chart">{% if chart %}<img src="data:image/png;base64,{{ chart }}" alt="Графік">{% else %}<p class="muted">Недостатньо даних</p>{% endif %}</section>
+    {% endfor %}
+</div>
+
+<div class="grid-2">
+    <section class="card">
+        <h2>Ефективність менеджерів</h2>
+        <table class="data-table compact">
+            <thead><tr><th>Менеджер</th><th>Усього</th><th>Активні</th><th>Доставлено</th><th>Комісія, $</th><th>Бонус, $</th></tr></thead>
+            <tbody>{% for m in managers %}
+            <tr><td>{{ m.manager_name }}</td><td class="num">{{ m.orders_total }}</td><td class="num">{{ m.orders_active }}</td>
+                <td class="num">{{ m.orders_delivered }}</td><td class="num">{{ m.fee_income_usd|money }}</td><td class="num">{{ m.bonus_usd|money }}</td></tr>
+            {% endfor %}</tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>Перевізники: швидкість доставки</h2>
+        <table class="data-table compact">
+            <thead><tr><th>Місце</th><th>Перевізник</th><th>Доставок</th><th>Сер. днів</th><th>Сер. ціна, $</th></tr></thead>
+            <tbody>{% for c in carriers %}
+            <tr><td class="num">{{ c.speed_rank if c.avg_days is not none else '—' }}</td><td>{{ c.carrier }}</td>
+                <td class="num">{{ c.delivered }}/{{ c.shipments }}</td><td class="num">{{ c.avg_days or '—' }}</td><td class="num">{{ c.avg_cost|money }}</td></tr>
+            {% endfor %}</tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>Середні митні платежі</h2>
+        <table class="data-table compact">
+            <thead><tr><th>Пальне</th><th>Вік авто</th><th>Авто</th><th>Сер. сума, $</th></tr></thead>
+            <tbody>{% for c in customs %}
+            <tr><td>{{ FUEL_TYPES[c.fuel_type] }}</td><td>{{ c.age_group }}</td><td class="num">{{ c.cars }}</td><td class="num">{{ c.avg_total|money }}</td></tr>
+            {% endfor %}</tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>Топ-5 клієнтів за платежами</h2>
+        <table class="data-table compact">
+            <thead><tr><th>Клієнт</th><th>Місто</th><th>Замовлень</th><th>Сплачено, $</th><th>Частка</th></tr></thead>
+            <tbody>{% for c in top_clients %}
+            <tr><td>{{ c.client }}</td><td>{{ c.city }}</td><td class="num">{{ c.orders }}</td><td class="num">{{ c.paid|money }}</td><td class="num">{{ c.share }} %</td></tr>
+            {% endfor %}</tbody>
+        </table>
+    </section>
+</div>
+{% endblock %}

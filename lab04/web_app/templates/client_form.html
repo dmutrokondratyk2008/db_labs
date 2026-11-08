@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field with context %}
+{% block title %}{{ 'Редагування клієнта' if client_id else 'Новий клієнт' }}{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h1>{{ 'Редагування клієнта № %s'|format(client_id) if client_id else 'Новий клієнт' }}</h1>
+    <form method="post" data-validate novalidate>
+        <div class="form-row">
+            {{ field('last_name', 'Прізвище', data, errors, attrs='maxlength="50"') }}
+            {{ field('first_name', "Ім'я", data, errors, attrs='maxlength="50"') }}
+        </div>
+        <div class="form-row">
+            {{ field('phone', 'Телефон', data, errors, type='tel', rule='phone', attrs='placeholder="+380XXXXXXXXX"') }}
+            {{ field('email', 'Email', data, errors, type='email', required=false, rule='email') }}
+        </div>
+        {{ field('city', 'Місто', data, errors, attrs='maxlength="50"') }}
+        <div class="form-actions">
+            <a class="btn btn-light" href="{{ url_for('clients') }}">Скасувати</a>
+            <button class="btn btn-primary" type="submit">Зберегти</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

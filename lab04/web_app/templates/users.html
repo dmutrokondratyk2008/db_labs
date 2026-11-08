@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Користувачі{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Користувачі та ролі</h1></div>
+<div class="table-container">
+<table class="data-table">
+    <thead><tr><th>ID</th><th>Логін</th><th>Ім'я</th><th>Email</th><th>Менеджер</th><th>Останній вхід</th><th>Роль і доступ</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr class="{{ 'muted-row' if not u.is_active }}">
+        <td>{{ u.user_id }}</td><td><b>{{ u.username }}</b></td><td>{{ u.full_name }}</td><td>{{ u.email }}</td>
+        <td>{{ u.manager_name or '—' }}</td><td>{{ u.last_login|d }}</td>
+        <td>
+            <form class="inline-forms" method="post">
+                <input type="hidden" name="user_id" value="{{ u.user_id }}">
+                <select name="role">{% for k, v in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if u.role == k }}>{{ v }}</option>{% endfor %}</select>
+                <select name="is_active"><option value="1" {{ 'selected' if u.is_active }}>активний</option><option value="0" {{ 'selected' if not u.is_active }}>заблокований</option></select>
+                <button class="btn btn-small btn-primary">Зберегти</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+<section class="card">
+    <h2>Права ролей</h2>
+    <table class="data-table compact">
+        <thead><tr><th>Дія</th><th>адміністратор</th><th>менеджер</th><th>перегляд</th></tr></thead>
+        <tbody>
+            <tr><td>Перегляд замовлень, клієнтів, авто, аналітики, звіти PDF/Excel</td><td>✔</td><td>✔</td><td>✔</td></tr>
+            <tr><td>Створення і редагування клієнтів, замовлень, авто, платежів, доставки</td><td>✔</td><td>✔</td><td>✘</td></tr>
+            <tr><td>Видалення записів</td><td>✔</td><td>✘</td><td>✘</td></tr>
+            <tr><td>Журнал операцій, керування користувачами, резервні копії</td><td>✔</td><td>✘</td><td>✘</td></tr>
+        </tbody>
+    </table>
+</section>
+{% endblock %}

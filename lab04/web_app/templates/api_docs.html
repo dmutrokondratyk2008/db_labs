@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}API{% endblock %}
+{% block content %}
+<div class="page-header"><h1>REST API для інтеграції</h1></div>
+<section class="card">
+    <p>Усі запити потребують заголовка <code>X-API-Key</code>. Відповіді у форматі JSON.
+       {% if api_key %}Поточний ключ: <code>{{ api_key }}</code>{% else %}Ключ видає адміністратор.{% endif %}</p>
+    <table class="data-table compact">
+        <thead><tr><th>Метод</th><th>Шлях</th><th>Опис</th></tr></thead>
+        <tbody>
+            <tr><td><span class="badge method-get">GET</span></td><td class="mono">/api/orders?status=in_transit</td><td>Список замовлень з фінансами, фільтр за статусом</td></tr>
+            <tr><td><span class="badge method-get">GET</span></td><td class="mono">/api/orders/&lt;id&gt;</td><td>Замовлення: дані, кошторис, історія статусів</td></tr>
+            <tr><td><span class="badge method-patch">PATCH</span></td><td class="mono">/api/orders/&lt;id&gt;/status</td><td>Зміна статусу: <code>{"status": "in_port"}</code> (через change_order_status)</td></tr>
+            <tr><td><span class="badge method-get">GET</span></td><td class="mono">/api/cars?make=toyota</td><td>Авто з пошуком за маркою/моделлю</td></tr>
+            <tr><td><span class="badge method-post">POST</span></td><td class="mono">/api/clients</td><td>Створення клієнта, серверна валідація (422 при помилках)</td></tr>
+            <tr><td><span class="badge method-get">GET</span></td><td class="mono">/api/stats</td><td>Зведена статистика</td></tr>
+        </tbody>
+    </table>
+    <h2>Приклад (PowerShell)</h2>
+    <pre>curl.exe -s -H "X-API-Key: &lt;ключ&gt;" http://localhost:5000/api/orders/11</pre>
+    <p>Коди відповідей: 200/201 успіх, 400 некоректний запит, 401 невірний ключ, 404 не знайдено,
+       409 конфлікт із правилами бази даних, 422 помилки валідації.</p>
+</section>
+{% endblock %}

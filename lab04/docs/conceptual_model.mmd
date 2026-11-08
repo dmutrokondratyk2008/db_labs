@@ -1,0 +1,136 @@
+erDiagram
+    CLIENTS ||--o{ ORDERS : "робить"
+    MANAGERS ||--o{ ORDERS : "веде"
+    CARS |o--o| ORDERS : "купується для"
+    AUCTION_YARDS ||--o{ CARS : "продає"
+    ORDERS ||--o| SHIPMENTS : "доставляється"
+    CARRIERS ||--o{ SHIPMENTS : "перевозить"
+    ORDERS ||--o| CUSTOMS_DECLARATIONS : "розмитнюється"
+    ORDERS ||--o{ ORDER_SERVICES : "містить"
+    SERVICES ||--o{ ORDER_SERVICES : "входить у"
+    ORDERS ||--o{ PAYMENTS : "оплачується"
+    ORDERS ||--o{ ORDER_STATUS_HISTORY : "має історію"
+    MANAGERS |o--o| USERS : "обліковий запис"
+    USERS |o--o{ ACTIVITY_LOG : "виконує дії"
+
+    CLIENTS {
+        int client_id PK
+        varchar first_name
+        varchar last_name
+        varchar phone UK
+        varchar email UK
+        varchar city
+    }
+    MANAGERS {
+        int manager_id PK
+        varchar first_name
+        varchar last_name
+        varchar phone UK
+        varchar email UK
+        date hire_date
+        numeric commission_pct
+        bool is_active
+    }
+    AUCTION_YARDS {
+        int yard_id PK
+        varchar platform
+        varchar yard_name
+        varchar city
+        char state
+    }
+    CARS {
+        int car_id PK
+        char vin UK
+        varchar make
+        varchar model
+        smallint model_year
+        varchar fuel_type
+        numeric engine_volume
+        numeric battery_kwh
+        int mileage_mi
+        int yard_id FK
+        varchar lot_number
+        numeric purchase_price_usd
+        numeric auction_fee_usd
+        date purchase_date
+    }
+    ORDERS {
+        int order_id PK
+        int client_id FK
+        int manager_id FK
+        int car_id FK,UK
+        date order_date
+        varchar wanted_car
+        numeric budget_usd
+        varchar destination_city
+        numeric service_fee_usd
+        varchar status
+    }
+    CARRIERS {
+        int carrier_id PK
+        varchar name UK
+        varchar country
+        smallint transit_days_avg
+        numeric rating
+    }
+    SHIPMENTS {
+        int shipment_id PK
+        int order_id FK,UK
+        int carrier_id FK
+        varchar container_number
+        varchar port_from
+        varchar port_to
+        date departure_date
+        date arrival_date
+        numeric shipping_cost_usd
+    }
+    CUSTOMS_DECLARATIONS {
+        int order_id PK,FK
+        numeric customs_value_usd
+        numeric duty_usd
+        numeric excise_usd
+        numeric vat_usd
+        numeric eur_usd_rate
+        date declared_at
+        date cleared_at
+    }
+    SERVICES {
+        int service_id PK
+        varchar name UK
+        numeric base_price_usd
+    }
+    ORDER_SERVICES {
+        int order_id PK,FK
+        int service_id PK,FK
+        numeric price_usd
+    }
+    PAYMENTS {
+        int payment_id PK
+        int order_id FK
+        numeric amount_usd
+        date payment_date
+        varchar method
+        varchar purpose
+    }
+    ORDER_STATUS_HISTORY {
+        int history_id PK
+        int order_id FK
+        varchar old_status
+        varchar new_status
+        timestamp changed_at
+    }
+    USERS {
+        int user_id PK
+        varchar username UK
+        varchar password_hash
+        varchar role
+        int manager_id FK,UK
+    }
+    ACTIVITY_LOG {
+        bigint log_id PK
+        int user_id FK
+        varchar action
+        varchar table_name
+        jsonb old_data
+        jsonb new_data
+    }

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_th, pagination with context %}
+{% block title %}Клієнти{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Клієнти</h1>
+    {% if can('admin', 'manager') %}<a class="btn btn-primary" href="{{ url_for('client_form') }}">+ Додати клієнта</a>{% endif %}
+</div>
+
+<form class="filters" method="get">
+    <input name="q" value="{{ q }}" placeholder="Прізвище, ім'я, телефон або email">
+    <select name="city">
+        <option value="">Усі міста</option>
+        {% for c in cities %}<option {{ 'selected' if c == city }}>{{ c }}</option>{% endfor %}
+    </select>
+    <button class="btn btn-primary" type="submit">Знайти</button>
+    <a class="btn btn-light" href="{{ url_for('clients') }}">Скинути</a>
+</form>
+
+<div class="table-container">
+<table class="data-table">
+    <thead><tr>
+        {{ sort_th('id', 'ID', sort, dir) }}
+        {{ sort_th('name', 'Клієнт', sort, dir) }}
+        <th>Телефон</th><th>Email</th>
+        {{ sort_th('city', 'Місто', sort, dir) }}
+        {{ sort_th('orders', 'Замовлень', sort, dir) }}
+        {{ sort_th('created', 'Зареєстровано', sort, dir) }}
+        {% if can('admin', 'manager') %}<th>Дії</th>{% endif %}
+    </tr></thead>
+    <tbody>
+    {% for c in rows %}
+    <tr>
+        <td>{{ c.client_id }}</td>
+        <td><a href="{{ url_for('orders', q=c.last_name) }}">{{ c.last_name }} {{ c.first_name }}</a></td>
+        <td>{{ c.phone }}</td><td>{{ c.email or '—' }}</td><td>{{ c.city }}</td>
+        <td class="num">{{ c.orders_count }}</td><td>{{ c.created_at|d }}</td>
+        {% if can('admin', 'manager') %}
+        <td class="actions">
+            <a class="btn btn-small btn-edit" href="{{ url_for('client_form', client_id=c.client_id) }}">Редагувати</a>
+            {% if can('admin') %}
+            <form method="post" action="{{ url_for('client_delete', client_id=c.client_id) }}"
+                  onsubmit="return confirm('Видалити клієнта {{ c.last_name }}?')">
+                <button class="btn btn-small btn-delete">Видалити</button>
+            </form>
+            {% endif %}
+        </td>
+        {% endif %}
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted center">Нічого не знайдено</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{{ pagination(pager) }}
+{% endblock %}

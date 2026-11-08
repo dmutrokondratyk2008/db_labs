@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination with context %}
+{% block title %}Журнал операцій{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Журнал операцій</h1></div>
+
+<form class="filters" method="get">
+    <select name="user"><option value="">Усі користувачі</option>
+        {% for u in options.users %}<option {{ 'selected' if f.user == u }}>{{ u }}</option>{% endfor %}</select>
+    <select name="action"><option value="">Усі дії</option>
+        {% for a in options.actions %}<option {{ 'selected' if f.action == a }}>{{ a }}</option>{% endfor %}</select>
+    <select name="table"><option value="">Усі таблиці</option>
+        {% for t in options.tables %}<option {{ 'selected' if f.table == t }}>{{ t }}</option>{% endfor %}</select>
+    <button class="btn btn-primary">Фільтрувати</button>
+    <a class="btn btn-light" href="{{ url_for('admin_logs') }}">Скинути</a>
+</form>
+
+<div class="table-container">
+<table class="data-table compact log-table">
+    <thead><tr><th>Час</th><th>Користувач</th><th>Дія</th><th>Таблиця</th><th>ID</th><th>Деталі / зміни</th></tr></thead>
+    <tbody>
+    {% for l in rows %}
+    <tr>
+        <td class="nowrap">{{ l.created_at|d }}</td>
+        <td>{{ l.username or '—' }}</td>
+        <td><span class="badge act-{{ l.action|lower }}">{{ l.action }}</span></td>
+        <td>{{ l.table_name or '' }}</td><td>{{ l.record_id or '' }}</td>
+        <td class="log-details">
+            {% if l.details %}{{ l.details }}{% endif %}
+            {% if l.action == 'UPDATE' and l.old_data and l.new_data %}
+                {% for k, v in l.new_data.items() if l.old_data.get(k) != v and k not in ('updated_at',) %}
+                <div><code>{{ k }}</code>: {{ l.old_data.get(k) }} → <b>{{ v }}</b></div>
+                {% endfor %}
+            {% elif l.action == 'INSERT' and l.new_data %}
+                <div class="muted">{{ l.new_data|tojson|truncate(140) }}</div>
+            {% elif l.action == 'DELETE' and l.old_data %}
+                <div class="muted">{{ l.old_data|tojson|truncate(140) }}</div>
+            {% endif %}
+        </td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="muted center">Записів немає</td></tr>{% endfor %}
+    </tbody>
+</table>
+</div>
+{{ pagination(pager) }}
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_th, pagination, status_badge with context %}
+{% block title %}Авто{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Авто, куплені на аукціонах</h1>
+    <span class="muted">Нове авто додається через купівлю в картці замовлення</span>
+</div>
+
+<form class="filters" method="get" data-validate novalidate>
+    <input name="q" value="{{ f.q }}" placeholder="Марка, модель або VIN">
+    <select name="fuel">
+        <option value="">Будь-яке пальне</option>
+        {% for k, v in FUEL_TYPES.items() %}<option value="{{ k }}" {{ 'selected' if f.fuel == k }}>{{ v }}</option>{% endfor %}
+    </select>
+    <select name="platform">
+        <option value="">Усі аукціони</option>
+        {% for p in ['Copart', 'IAAI', 'Manheim'] %}<option {{ 'selected' if f.platform == p }}>{{ p }}</option>{% endfor %}
+    </select>
+    <input name="year_from" type="number" min="1990" max="2100" value="{{ f.year_from }}" placeholder="Рік від" class="short">
+    <input name="year_to" type="number" min="1990" max="2100" value="{{ f.year_to }}" placeholder="Рік до" class="short">
+    <button class="btn btn-primary" type="submit">Фільтрувати</button>
+    <a class="btn btn-light" href="{{ url_for('cars') }}">Скинути</a>
+</form>
+
+<div class="table-container">
+<table class="data-table">
+    <thead><tr>
+        <th>VIN</th>
+        {{ sort_th('car', 'Авто', sort, dir) }}
+        {{ sort_th('year', 'Рік', sort, dir) }}
+        <th>Пальне</th>
+        {{ sort_th('mileage', 'Пробіг, миль', sort, dir) }}
+        <th>Аукціон</th><th>Пошкодження</th>
+        {{ sort_th('price', 'Ціна, $', sort, dir) }}
+        {{ sort_th('date', 'Куплено', sort, dir) }}
+        <th>Замовлення</th>
+        {% if can('admin', 'manager') %}<th></th>{% endif %}
+    </tr></thead>
+    <tbody>
+    {% for c in rows %}
+    <tr>
+        <td class="mono">{{ c.vin }}</td>
+        <td>{{ c.make }} {{ c.model }}</td><td>{{ c.model_year }}</td>
+        <td>{{ FUEL_TYPES[c.fuel_type] }} {{ c.engine_volume ~ ' л' if c.engine_volume else c.battery_kwh ~ ' кВт*год' }}</td>
+        <td class="num">{{ '{:,}'.format(c.mileage_mi).replace(',', ' ') }}</td>
+        <td>{{ c.platform }} · {{ c.yard_name }}, {{ c.state }}<br><small class="muted">лот {{ c.lot_number }}</small></td>
+        <td>{{ c.damage or '—' }}</td>
+        <td class="num">{{ c.purchase_price_usd|money }}</td><td>{{ c.purchase_date|d }}</td>
+        <td>{% if c.order_id %}<a href="{{ url_for('order_detail', order_id=c.order_id) }}">№ {{ c.order_id }}</a> {{ status_badge(c.status) }}{% else %}—{% endif %}</td>
+        {% if can('admin', 'manager') %}
+        <td class="actions"><a class="btn btn-small btn-edit" href="{{ url_for('car_form', car_id=c.car_id) }}">Редагувати</a></td>
+        {% endif %}
+    </tr>
+    {% else %}
+    <tr><td colspan="11" class="muted center">Нічого не знайдено</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{{ pagination(pager) }}
+{% endblock %}

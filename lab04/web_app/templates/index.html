@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge with context %}
+{% block title %}Головна{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Огляд</h1>
+    {% if can('admin', 'manager') %}<a class="btn btn-primary" href="{{ url_for('order_form') }}">+ Нове замовлення</a>{% endif %}
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi"><span class="kpi-value">{{ stats.active }}</span><span class="kpi-label">активних замовлень</span></div>
+    <div class="kpi"><span class="kpi-value">{{ stats.on_the_way }}</span><span class="kpi-label">авто в дорозі / в порту</span></div>
+    <div class="kpi"><span class="kpi-value">{{ stats.delivered }}</span><span class="kpi-label">доставлено клієнтам</span></div>
+    <div class="kpi"><span class="kpi-value">{{ stats.clients }}</span><span class="kpi-label">клієнтів</span></div>
+    <div class="kpi"><span class="kpi-value">{{ finance.paid|money }} $</span><span class="kpi-label">отримано від клієнтів</span></div>
+    <div class="kpi kpi-warn"><span class="kpi-value">{{ finance.debt|money }} $</span><span class="kpi-label">заборгованість клієнтів</span></div>
+</div>
+
+<div class="grid-2">
+    <section class="card">
+        <h2>Авто в морі</h2>
+        <table class="data-table compact">
+            <thead><tr><th>№</th><th>Авто</th><th>Перевізник</th><th>Відправлено</th><th>Очікується</th></tr></thead>
+            <tbody>
+            {% for s in transit %}
+            <tr>
+                <td><a href="{{ url_for('order_detail', order_id=s.order_id) }}">{{ s.order_id }}</a></td>
+                <td>{{ s.car }}</td><td>{{ s.carrier }}</td><td>{{ s.departure_date|d }}</td><td>{{ s.expected_arrival|d }}</td>
+            </tr>
+            {% else %}<tr><td colspan="5" class="muted">Немає авто в дорозі</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>Останні зміни статусів</h2>
+        <table class="data-table compact">
+            <thead><tr><th>№</th><th>Статус</th><th>Коли</th><th>Хто</th></tr></thead>
+            <tbody>
+            {% for h in history %}
+            <tr>
+                <td><a href="{{ url_for('order_detail', order_id=h.order_id) }}">{{ h.order_id }}</a></td>
+                <td>{% if h.old_status %}{{ status_badge(h.old_status) }} → {% endif %}{{ status_badge(h.new_status) }}</td>
+                <td>{{ h.changed_at|d }}</td><td>{{ h.changed_by }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+
+{% if my_orders %}
+<section class="card">
+    <h2>Мої активні замовлення</h2>
+    <table class="data-table compact">
+        <thead><tr><th>№</th><th>Клієнт</th><th>Авто</th><th>Статус</th></tr></thead>
+        <tbody>
+        {% for o in my_orders %}
+        <tr><td><a href="{{ url_for('order_detail', order_id=o.order_id) }}">{{ o.order_id }}</a></td>
+            <td>{{ o.client_name }}</td><td>{{ o.car }}</td><td>{{ status_badge(o.status) }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+{% endblock %}

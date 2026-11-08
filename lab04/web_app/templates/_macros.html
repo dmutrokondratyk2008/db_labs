@@ -1,0 +1,51 @@
+{# Поле форми з міткою і повідомленням про помилку сервера #}
+{% macro field(name, label, data, errors, type='text', required=true, rule=none, attrs='', hint=none) -%}
+<div class="form-group {{ 'has-error' if errors.get(name) }}">
+    <label for="{{ name }}">{{ label }}{% if required %} <span class="req">*</span>{% endif %}</label>
+    <input type="{{ type }}" id="{{ name }}" name="{{ name }}"
+           value="{{ data.get(name) if data.get(name) is not none else '' }}"
+           {% if required %}required{% endif %} {% if rule %}data-rule="{{ rule }}"{% endif %} {{ attrs|safe }}>
+    {% if hint %}<small class="hint">{{ hint }}</small>{% endif %}
+    <div class="field-error">{{ errors.get(name, '') }}</div>
+</div>
+{%- endmacro %}
+
+{% macro select(name, label, options, data, errors, required=true, empty='— оберіть —') -%}
+<div class="form-group {{ 'has-error' if errors.get(name) }}">
+    <label for="{{ name }}">{{ label }}{% if required %} <span class="req">*</span>{% endif %}</label>
+    <select id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %}>
+        <option value="">{{ empty }}</option>
+        {% for value, text in options %}
+        <option value="{{ value }}" {{ 'selected' if data.get(name)|string == value|string }}>{{ text }}</option>
+        {% endfor %}
+    </select>
+    <div class="field-error">{{ errors.get(name, '') }}</div>
+</div>
+{%- endmacro %}
+
+{# Заголовок стовпця з сортуванням #}
+{% macro sort_th(key, label, sort, dir) -%}
+{% set args = request.args.to_dict() %}
+{% set _ = args.update({'sort': key, 'dir': 'desc' if sort == key and dir == 'asc' else 'asc', 'page': 1}) %}
+<th><a class="sort-link {{ 'sorted' if sort == key }}" href="?{{ args|urlencode }}">{{ label }}
+    {% if sort == key %}{{ '▲' if dir == 'asc' else '▼' }}{% endif %}</a></th>
+{%- endmacro %}
+
+{% macro pagination(pager) -%}
+{% if pager.pages > 1 %}
+<div class="pagination">
+    {% for p in range(1, pager.pages + 1) %}
+        {% set args = request.args.to_dict() %}
+        {% set _ = args.update({'page': p}) %}
+        <a href="?{{ args|urlencode }}" class="{{ 'current' if p == pager.page }}">{{ p }}</a>
+    {% endfor %}
+    <span class="muted">усього: {{ pager.total }}</span>
+</div>
+{% else %}
+<div class="pagination"><span class="muted">усього: {{ pager.total }}</span></div>
+{% endif %}
+{%- endmacro %}
+
+{% macro status_badge(status) -%}
+<span class="badge st-{{ status }}">{{ STATUSES.get(status, status) }}</span>
+{%- endmacro %}

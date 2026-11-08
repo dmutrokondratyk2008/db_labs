@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_th, pagination, status_badge with context %}
+{% block title %}Замовлення{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Замовлення</h1>
+    <div class="header-actions">
+        <a class="btn btn-light" href="{{ url_for('report_orders_pdf', **request.args.to_dict()) }}" target="_blank">📄 PDF-звіт</a>
+        <a class="btn btn-light" href="{{ url_for('report_finance_xlsx') }}">📊 Excel</a>
+        {% if can('admin', 'manager') %}<a class="btn btn-primary" href="{{ url_for('order_form') }}">+ Нове замовлення</a>{% endif %}
+    </div>
+</div>
+
+<form class="filters" method="get" data-validate novalidate>
+    <input name="q" value="{{ f.q }}" placeholder="Клієнт, авто або VIN">
+    <select name="status">
+        <option value="">Усі статуси</option>
+        {% for k, v in STATUSES.items() %}<option value="{{ k }}" {{ 'selected' if f.status == k }}>{{ v }}</option>{% endfor %}
+    </select>
+    <select name="manager">
+        <option value="">Усі менеджери</option>
+        {% for m in managers %}<option value="{{ m.manager_id }}" {{ 'selected' if f.manager == m.manager_id|string }}>{{ m.name }}</option>{% endfor %}
+    </select>
+    <label class="inline">з <input type="date" name="date_from" value="{{ f.date_from }}" data-rule="date-range-start"></label>
+    <label class="inline">по <input type="date" name="date_to" value="{{ f.date_to }}" data-rule="date-range-end"></label>
+    <label class="inline"><input type="checkbox" name="debt" value="1" {{ 'checked' if f.debt == '1' }}> з боргом</label>
+    <button class="btn btn-primary" type="submit">Застосувати</button>
+    <a class="btn btn-light" href="{{ url_for('orders') }}">Скинути</a>
+    <div class="field-error filters-error"></div>
+</form>
+
+<div class="table-container">
+<table class="data-table">
+    <thead><tr>
+        {{ sort_th('id', '№', sort, dir) }}
+        {{ sort_th('date', 'Дата', sort, dir) }}
+        {{ sort_th('client', 'Клієнт', sort, dir) }}
+        <th>Авто / запит</th>
+        {{ sort_th('manager', 'Менеджер', sort, dir) }}
+        {{ sort_th('status', 'Статус', sort, dir) }}
+        {{ sort_th('total', 'Вартість, $', sort, dir) }}
+        {{ sort_th('balance', 'Залишок, $', sort, dir) }}
+    </tr></thead>
+    <tbody>
+    {% for o in rows %}
+    <tr>
+        <td><a href="{{ url_for('order_detail', order_id=o.order_id) }}">{{ o.order_id }}</a></td>
+        <td>{{ o.order_date|d }}</td>
+        <td>{{ o.client_name }}</td>
+        <td>{% if o.car %}{{ o.car }}{% else %}<span class="muted">{{ o.wanted_car }}</span>{% endif %}</td>
+        <td>{{ o.manager_name }}</td>
+        <td>{{ status_badge(o.status) }}</td>
+        <td class="num">{{ o.total_cost_usd|money }}</td>
+        <td class="num {{ 'debt' if o.balance_usd > 0 else 'advance' if o.balance_usd < 0 }}">{{ o.balance_usd|money }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted center">Нічого не знайдено</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{{ pagination(pager) }}
+<p class="muted small">Від'ємний залишок означає аванс клієнта (сплачено більше, ніж нараховано на поточному етапі).</p>
+{% endblock %}

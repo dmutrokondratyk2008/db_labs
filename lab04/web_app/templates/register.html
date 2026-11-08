@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Реєстрація{% endblock %}
+{% block content %}
+<div class="auth-card">
+    <h1>Реєстрація</h1>
+    <p class="muted">Новий користувач отримує роль «перегляд». Права менеджера надає адміністратор.</p>
+    <form method="post" data-validate novalidate>
+        {{ field('username', 'Логін', data, errors, rule='username', hint='3-30 латинських літер, цифр або _') }}
+        {{ field('full_name', "Повне ім'я", data, errors, attrs='maxlength="100"') }}
+        {{ field('email', 'Email', data, errors, type='email', rule='email') }}
+        {{ field('password', 'Пароль', data, errors, type='password', rule='password', hint='Не менше 8 символів, літери та цифри') }}
+        {{ field('password2', 'Повторіть пароль', data, errors, type='password', rule='same:password') }}
+        <button class="btn btn-primary btn-block" type="submit">Зареєструватися</button>
+    </form>
+    <p class="center"><a href="{{ url_for('auth.login') }}">Уже маю обліковий запис</a></p>
+</div>
+{% endblock %}

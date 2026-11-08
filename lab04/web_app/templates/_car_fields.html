@@ -1,0 +1,33 @@
+{# Поля авто: використовуються в редагуванні авто і в купівлі для замовлення #}
+{% from "_macros.html" import field, select with context %}
+<div class="form-row">
+    {{ field('vin', 'VIN', data, errors, rule='vin', attrs='maxlength="17" class="upper"', hint='17 символів, без I, O, Q') }}
+    {{ field('make', 'Марка', data, errors, attrs='maxlength="40"') }}
+    {{ field('model', 'Модель', data, errors, attrs='maxlength="40"') }}
+</div>
+<div class="form-row">
+    {{ field('model_year', 'Рік випуску', data, errors, type='number', attrs='min="1990" max="%s"'|format(today[:4]|int + 1)) }}
+    {{ select('fuel_type', 'Пальне', FUEL_TYPES.items(), data, errors) }}
+    {{ field('engine_volume', "Об'єм двигуна, л", data, errors, type='number', required=false, attrs='step="0.1" min="0.6" max="8" data-fuel="engine"') }}
+    {{ field('battery_kwh', 'Батарея, кВт*год', data, errors, type='number', required=false, attrs='step="0.1" min="1" max="300" data-fuel="battery"') }}
+</div>
+<div class="form-row">
+    {{ field('mileage_mi', 'Пробіг, миль', data, errors, type='number', attrs='min="0"') }}
+    {{ field('damage', 'Пошкодження', data, errors, required=false, attrs='maxlength="100"') }}
+</div>
+<div class="form-row">
+    <div class="form-group {{ 'has-error' if errors.get('yard_id') }}">
+        <label for="yard_id">Аукціонний майданчик <span class="req">*</span></label>
+        <select id="yard_id" name="yard_id" required>
+            <option value="">— оберіть —</option>
+            {% for y in yards %}<option value="{{ y.yard_id }}" {{ 'selected' if data.get('yard_id')|string == y.yard_id|string }}>{{ y.name }}</option>{% endfor %}
+        </select>
+        <div class="field-error">{{ errors.get('yard_id', '') }}</div>
+    </div>
+    {{ field('lot_number', 'Номер лоту', data, errors, attrs='maxlength="12"') }}
+</div>
+<div class="form-row">
+    {{ field('purchase_price_usd', 'Ціна лоту, $', data, errors, type='number', rule='money', attrs='step="0.01" min="1"') }}
+    {{ field('auction_fee_usd', 'Збір аукціону, $', data, errors, type='number', required=false, attrs='step="0.01" min="0"') }}
+    {{ field('purchase_date', 'Дата купівлі', data, errors, type='date', rule='not-future', attrs='max="%s"'|format(today)) }}
+</div>

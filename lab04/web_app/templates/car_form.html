@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Редагування авто{% endblock %}
+{% block content %}
+<div class="form-container wide">
+    <h1>Редагування авто № {{ car_id }}</h1>
+    <form method="post" data-validate novalidate>
+        {% include "_car_fields.html" %}
+        <div class="form-actions">
+            {% if can('admin') %}
+            <button class="btn btn-delete" type="submit" form="delete-form">Видалити авто</button>
+            {% endif %}
+            <a class="btn btn-light" href="{{ url_for('cars') }}">Скасувати</a>
+            <button class="btn btn-primary" type="submit">Зберегти</button>
+        </div>
+    </form>
+    {% if can('admin') %}
+    <form id="delete-form" method="post" action="{{ url_for('car_delete', car_id=car_id) }}"
+          onsubmit="return confirm('Видалити авто? Якщо воно прив\'язане до замовлення, база не дозволить це зробити.')"></form>
+    {% endif %}
+</div>
+{% endblock %}

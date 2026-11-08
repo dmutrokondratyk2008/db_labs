@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Вхід{% endblock %}
+{% block content %}
+<div class="auth-card">
+    <h1>Вхід до системи</h1>
+    <p class="muted">Облік замовлень компанії з пригону авто зі США</p>
+    <form method="post" data-validate novalidate>
+        <div class="form-group">
+            <label for="username">Логін <span class="req">*</span></label>
+            <input id="username" name="username" required autofocus data-rule="username">
+            <div class="field-error"></div>
+        </div>
+        <div class="form-group">
+            <label for="password">Пароль <span class="req">*</span></label>
+            <input id="password" name="password" type="password" required>
+            <div class="field-error"></div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Увійти</button>
+    </form>
+    <p class="center">Немає облікового запису? <a href="{{ url_for('auth.register') }}">Зареєструватися</a></p>
+</div>
+{% endblock %}

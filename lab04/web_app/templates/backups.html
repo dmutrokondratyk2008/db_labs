@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Резервні копії{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Резервне копіювання бази даних</h1>
+    <form method="post"><button class="btn btn-primary">💾 Створити резервну копію</button></form>
+</div>
+<section class="card">
+    <p>Копія створюється командою <code>pg_dump -Fc</code> у контейнері <code>{{ container }}</code>
+       і зберігається в каталозі <code>lab04/backups</code>. Відновлення:</p>
+    <pre>docker exec {{ container }} pg_restore -U postgres -d car_import --clean --if-exists /backups/&lt;файл&gt;.dump</pre>
+</section>
+<div class="table-container">
+<table class="data-table">
+    <thead><tr><th>Файл</th><th>Створено</th><th>Розмір, КБ</th><th></th></tr></thead>
+    <tbody>
+    {% for b in backups %}
+    <tr><td class="mono">{{ b.name }}</td><td>{{ b.created|d }}</td><td class="num">{{ b.size_kb }}</td>
+        <td><a class="btn btn-small btn-light" href="{{ url_for('admin_backup_download', name=b.name) }}">Завантажити</a></td></tr>
+    {% else %}<tr><td colspan="4" class="muted center">Резервних копій ще немає</td></tr>{% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

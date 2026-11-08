@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge with context %}
+{% block title %}Замовлення № {{ order.order_id }}{% endblock %}
+{% block content %}
+{% set staff = can('admin', 'manager') %}
+<div class="page-header">
+    <h1>Замовлення № {{ order.order_id }} {{ status_badge(order.status) }}</h1>
+    <div class="header-actions">
+        <a class="btn btn-light" href="{{ url_for('report_order_cost_pdf', order_id=order.order_id) }}" target="_blank">📄 Кошторис PDF</a>
+        {% if staff %}<a class="btn btn-edit" href="{{ url_for('order_form', order_id=order.order_id) }}">Редагувати</a>{% endif %}
+        {% if can('admin') %}
+        <form method="post" action="{{ url_for('order_delete', order_id=order.order_id) }}" onsubmit="return confirm('Видалити замовлення?')">
+            <button class="btn btn-delete">Видалити</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid-2">
+    <section class="card">
+        <h2>Основні дані</h2>
+        <dl class="props">
+            <dt>Клієнт</dt><dd>{{ order.client_name }}, {{ order.client_phone }}</dd>
+            <dt>Менеджер</dt><dd>{{ order.manager_name }}</dd>
+            <dt>Дата замовлення</dt><dd>{{ order.order_date|d }}</dd>
+            <dt>Запит клієнта</dt><dd>{{ order.wanted_car }}</dd>
+            <dt>Бюджет</dt><dd>{{ order.budget_usd|money }} $</dd>
+            <dt>Місто доставки</dt><dd>{{ order.destination_city }}</dd>
+            <dt>Авто</dt><dd>{% if order.car %}<b>{{ order.car }}</b> ({{ FUEL_TYPES[order.fuel_type] }})<br><span class="mono">{{ order.vin }}</span>{% else %}<span class="muted">ще не куплено</span>{% endif %}</dd>
+            <dt>Аукціон</dt><dd>{{ order.auction_yard or '—' }}</dd>
+        </dl>
+    </section>
+    <section class="card">
+        <h2>Кошторис</h2>
+        <table class="data-table compact">
+            <tbody>
+            {% for c in cost %}
+            <tr class="{{ 'total-row' if c.item in ('РАЗОМ', 'Залишок до сплати') }}">
+                <td>{{ c.item }}</td><td class="num">{{ c.amount_usd|money }} $</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+
+{% if staff and order.status not in ('delivered', 'cancelled') %}
+<section class="card">
+    <h2>Керування статусом</h2>
+    <div class="inline-forms">
+        {% if next_status and order.status != 'new' %}
+        <form method="post" action="{{ url_for('order_status', order_id=order.order_id) }}">
+            <select name="status">{% for s in next_status %}<option value="{{ s }}">{{ STATUSES[s] }}</option>{% endfor %}</select>
+            <button class="btn btn-primary">Змінити статус</button>
+        </form>
+        {% endif %}
+        {% if order.status in ('new', 'bought') %}
+        <form method="post" action="{{ url_for('order_cancel', order_id=order.order_id) }}" data-validate novalidate
+              onsubmit="return this.checkValidity() && confirm('Скасувати замовлення?')">
+            <input name="reason" placeholder="Причина скасування" required minlength="5" maxlength="200">
+            <button class="btn btn-delete">Скасувати замовлення</button>
+            <div class="field-error"></div>
+        </form>
+        {% endif %}
+    </div>
+    <p class="muted small">Статуси «в дорозі» і «у порту» також встановлюються автоматично тригером при введенні дат доставки.</p>
+</section>
+{% endif %}
+
+{% if staff and order.status == 'new' %}
+<section class="card">
+    <h2>Купівля авто на аукціоні</h2>
+    <form method="post" action="{{ url_for('order_purchase', order_id=order.order_id) }}" data-validate novalidate>
+        {% with data={'purchase_date': today}, errors={} %}{% include "_car_fields.html" %}{% endwith %}
+        <div class="form-actions"><button class="btn btn-primary">Зареєструвати купівлю</button></div>
+    </form>
+</section>
+{% endif %}
+
+{% if order.car %}
+<div class="grid-2">
+    <section class="card">
+        <h2>Морська доставка</h2>
+        {% if shipment %}
+        <dl class="props">
+            <dt>Контейнер</dt><dd class="mono">{{ shipment.container_number }}</dd>
+            <dt>Маршрут</dt><dd>{{ shipment.port_from }} → {{ shipment.port_to }}</dd>
+            <dt>Відправлення</dt><dd>{{ shipment.departure_date|d }}</dd>
+            <dt>Прибуття</dt><dd>{{ shipment.arrival_date|d }}</dd>
+            <dt>Вартість</dt><dd>{{ shipment.shipping_cost_usd|money }} $</dd>
+        </dl>
+        {% endif %}
+        {% if staff and order.status in ('bought', 'in_transit') %}
+        <details {{ 'open' if not shipment }}>
+            <summary>{{ 'Змінити дані доставки' if shipment else 'Оформити доставку' }}</summary>
+            <form method="post" action="{{ url_for('order_shipment', order_id=order.order_id) }}" data-validate novalidate>
+                {% set sh = shipment or {} %}
+                <div class="form-row">
+                    <div class="form-group"><label>Перевізник *</label>
+                        <select name="carrier_id" required><option value="">—</option>
+                        {% for c in carriers %}<option value="{{ c.carrier_id }}" {{ 'selected' if sh.carrier_id == c.carrier_id }}>{{ c.name }}</option>{% endfor %}</select>
+                        <div class="field-error"></div></div>
+                    <div class="form-group"><label>Контейнер *</label>
+                        <input name="container_number" value="{{ sh.container_number or '' }}" required data-rule="container" class="upper" maxlength="11" placeholder="MSKU1234567">
+                        <div class="field-error"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Порт відправлення *</label>
+                        <input name="port_from" value="{{ sh.port_from or '' }}" required maxlength="50" placeholder="Newark, NJ"><div class="field-error"></div></div>
+                    <div class="form-group"><label>Порт призначення *</label>
+                        <select name="port_to" required><option value="">—</option>
+                        {% for p in PORTS %}<option {{ 'selected' if sh.port_to == p }}>{{ p }}</option>{% endfor %}</select><div class="field-error"></div></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Відправлення</label>
+                        <input type="date" name="departure_date" value="{{ sh.departure_date or '' }}" max="{{ today }}" data-rule="date-range-start"><div class="field-error"></div></div>
+                    <div class="form-group"><label>Прибуття</label>
+                        <input type="date" name="arrival_date" value="{{ sh.arrival_date or '' }}" max="{{ today }}" data-rule="date-range-end"><div class="field-error"></div></div>
+                    <div class="form-group"><label>Вартість, $ *</label>
+                        <input type="number" step="0.01" min="1" name="shipping_cost_usd" value="{{ sh.shipping_cost_usd or '' }}" required data-rule="money"><div class="field-error"></div></div>
+                </div>
+                <button class="btn btn-primary">Зберегти доставку</button>
+            </form>
+        </details>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Митне оформлення</h2>
+        {% if customs %}
+        <dl class="props">
+            <dt>Митна вартість</dt><dd>{{ customs.customs_value_usd|money }} $</dd>
+            <dt>Мито (10 %)</dt><dd>{{ customs.duty_usd|money }} $</dd>
+            <dt>Акциз</dt><dd>{{ customs.excise_usd|money }} $ (курс EUR/USD {{ customs.eur_usd_rate }})</dd>
+            <dt>ПДВ (20 %)</dt><dd>{{ customs.vat_usd|money }} $</dd>
+            <dt>Декларація</dt><dd>{{ customs.declared_at|d }}</dd>
+            <dt>Розмитнено</dt><dd>{{ customs.cleared_at|d }}</dd>
+        </dl>
+        {% else %}<p class="muted">Розрахунок можливий після прибуття авто в порт.</p>{% endif %}
+        {% if staff and order.status in ('in_port', 'customs') %}
+        <div class="inline-forms">
+            <form method="post" action="{{ url_for('order_customs', order_id=order.order_id) }}" data-validate novalidate>
+                <label class="inline">EUR/USD <input name="eur_usd" type="number" step="0.0001" min="0.5" max="2" value="{{ customs.eur_usd_rate if customs else '1.16' }}" required class="short"></label>
+                <button class="btn btn-primary">{{ 'Перерахувати' if customs else 'Розрахувати митні платежі' }}</button>
+                <div class="field-error"></div>
+            </form>
+            {% if customs and not customs.cleared_at %}
+            <form method="post" action="{{ url_for('order_customs_clear', order_id=order.order_id) }}">
+                <button class="btn btn-success">Позначити розмитненим</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+
+<div class="grid-2">
+    <section class="card">
+        <h2>Додаткові послуги</h2>
+        <table class="data-table compact">
+            <thead><tr><th>Послуга</th><th>Ціна, $</th>{% if staff %}<th></th>{% endif %}</tr></thead>
+            <tbody>
+            {% for s in services %}
+            <tr><td>{{ s.name }}</td><td class="num">{{ s.price_usd|money }}</td>
+                {% if staff %}<td><form method="post" action="{{ url_for('order_service_delete', order_id=order.order_id, service_id=s.service_id) }}">
+                    <button class="btn btn-small btn-delete" title="Видалити">×</button></form></td>{% endif %}</tr>
+            {% else %}<tr><td colspan="3" class="muted">Послуг немає</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% if staff and order.status != 'cancelled' %}
+        <form class="inline-forms" method="post" action="{{ url_for('order_service_add', order_id=order.order_id) }}" data-validate novalidate>
+            <select name="service_id" required>
+                <option value="">— послуга —</option>
+                {% for s in all_services %}<option value="{{ s.service_id }}">{{ s.name }} ({{ s.base_price_usd|money }} $)</option>{% endfor %}
+            </select>
+            <input name="price_usd" type="number" step="0.01" min="0" placeholder="Ціна (за замовч. базова)" class="mid">
+            <button class="btn btn-primary">Додати</button>
+            <div class="field-error"></div>
+        </form>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Платежі</h2>
+        <table class="data-table compact">
+            <thead><tr><th>Дата</th><th>Призначення</th><th>Спосіб</th><th>Сума, $</th></tr></thead>
+            <tbody>
+            {% for p in payments %}
+            <tr><td>{{ p.payment_date|d }}</td><td>{{ PAY_PURPOSES[p.purpose] }}</td><td>{{ PAY_METHODS[p.method] }}</td><td class="num">{{ p.amount_usd|money }}</td></tr>
+            {% else %}<tr><td colspan="4" class="muted">Платежів немає</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% if staff and order.status != 'cancelled' %}
+        <form class="inline-forms" method="post" action="{{ url_for('order_payment_add', order_id=order.order_id) }}" data-validate novalidate>
+            <input name="amount_usd" type="number" step="0.01" min="0.01" placeholder="Сума, $" required data-rule="money" class="mid">
+            <input name="payment_date" type="date" value="{{ today }}" max="{{ today }}" required data-rule="not-future">
+            <select name="purpose" required>{% for k, v in PAY_PURPOSES.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+            <select name="method" required>{% for k, v in PAY_METHODS.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+            <button class="btn btn-primary">Внести платіж</button>
+            <div class="field-error"></div>
+        </form>
+        {% endif %}
+    </section>
+</div>
+
+<section class="card">
+    <h2>Історія статусів</h2>
+    <table class="data-table compact">
+        <thead><tr><th>Коли</th><th>Зміна</th><th>Хто</th><th>Коментар</th></tr></thead>
+        <tbody>
+        {% for h in history %}
+        <tr><td>{{ h.changed_at|d }}</td>
+            <td>{% if h.old_status %}{{ status_badge(h.old_status) }} → {% endif %}{{ status_badge(h.new_status) }}</td>
+            <td>{{ h.changed_by }}</td><td>{{ h.comment or '' }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
