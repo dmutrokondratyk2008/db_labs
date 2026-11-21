@@ -7,3 +7,8 @@ lab04/backups/*.dump
 
 # Резервні копії ЛР5 (дамп бази і ролі з хешами паролів)
 lab05/backups/
+
+# ЛР6: архіви mongodump, вивантаження mongoexport, дані набору реплік
+lab06/backups/
+lab06/export/
+lab06/replica/data/
