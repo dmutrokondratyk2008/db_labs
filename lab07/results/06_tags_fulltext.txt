@@ -1,0 +1,133 @@
+﻿
+=== 1. Хмара тегів (лічильники з колекції categories, type = "tag") ===
+  slug          | name        | n
+  --------------+-------------+--
+  mongodb       | MongoDB     | 8
+  javascript    | JavaScript  | 7
+  testing       | Тестування  | 7
+  security      | Безпека     | 6
+  aws           | AWS         | 5
+  nodejs        | Node.js     | 5
+  patterns      | Патерни     | 5
+  python        | Python      | 5
+  accessibility | Доступність | 4
+  ci-cd         | CI/CD       | 4
+  kotlin        | Kotlin      | 4
+  linux         | Linux       | 4
+  (12 рядк.)
+
+=== 2. Пошук за множинними тегами ===
+
+> усі теги одночасно: { tags: { $all: ['mongodb', 'nosql'] } }
+  title                                                  | tags                     | views
+  -------------------------------------------------------+--------------------------+------
+  Реплікація і шардинг: базові поняття                   | mongodb,nosql,postgresql | 1180 
+  Проєктування документної схеми в MongoDB               | mongodb,nosql            | 918  
+  Коли денормалізація виправдана                         | mongodb,postgresql,nosql | 1131 
+  Агрегаційний конвеєр MongoDB від простого до складного | mongodb,nosql            | 1219 
+  (4 рядк.)
+
+> будь-який із тегів: { tags: { $in: ['docker', 'kubernetes'] } }
+  title                                            | tags                     | views
+  -------------------------------------------------+--------------------------+------
+  API-шлюз і виявлення сервісів                    | microservices,kubernetes | 851  
+  Kubernetes: Pod, Deployment і Service без магії  | kubernetes,docker        | 681  
+  Docker для розробника: від Dockerfile до Compose | docker,linux             | 792  
+  Моніторинг сервісу з Prometheus і Grafana        | linux,kubernetes         | 1401 
+  (4 рядк.)
+
+> комбінація: усі з ['javascript', 'testing'] і жодного з ['jest']
+  title                         | tags               | views
+  ------------------------------+--------------------+------
+  End-to-end тести з Playwright | testing,javascript | 2073 
+  (1 рядк.)
+
+> ранжування за кількістю збігів із набором [mongodb, nodejs, security, patterns] (щонайменше 2)
+  title                                            | matched             | score
+  -------------------------------------------------+---------------------+------
+  NoSQL-ін'єкції та як від них захиститися         | [mongodb, security] | 2    
+  Чиста архітектура в Node.js-проєкті              | [nodejs, patterns]  | 2    
+  Кешування: стратегії cache-aside і write-through | [mongodb, patterns] | 2    
+  Зберігання паролів: bcrypt, scrypt і Argon2      | [nodejs, security]  | 2    
+  Node.js і Express: перший API за годину          | [mongodb, nodejs]   | 2    
+  (5 рядк.)
+
+> план запиту { tags: { $all: ['mongodb', 'nosql'] } }
+  {plan: FETCH <- IXSCAN(tags_1_published_at_-1), returned: 4, keysExamined: 5, docsExamined: 5, timeMs: 0}
+
+=== 3. Схожі пости (за спільними тегами і категорією) ===
+  Базовий пост: Проєктування документної схеми в MongoDB [mongodb, nosql], категорія Бази даних
+  title                                                  | tags                         | common | same_cat | score
+  -------------------------------------------------------+------------------------------+--------+----------+------
+  Агрегаційний конвеєр MongoDB від простого до складного | [mongodb, nosql]             | 2      | 1        | 5    
+  Реплікація і шардинг: базові поняття                   | [mongodb, nosql, postgresql] | 2      | 1        | 5    
+  Коли денормалізація виправдана                         | [mongodb, postgresql, nosql] | 2      | 1        | 5    
+  NoSQL-ін'єкції та як від них захиститися               | [security, mongodb, owasp]   | 1      | 0        | 2    
+  RAG: пошук по власних документах за допомогою LLM      | [llm, python, mongodb]       | 1      | 0        | 2    
+  (5 рядк.)
+
+=== 4. Повнотекстовий пошук (індекс posts_text: title x10, excerpt x4, content x1) ===
+  {weights: {content: 1, excerpt: 4, title: 10}, default_language: none}
+
+> слово: "MongoDB"
+  title                                                  | score
+  -------------------------------------------------------+------
+  Проєктування документної схеми в MongoDB               | 6.51 
+  Агрегаційний конвеєр MongoDB від простого до складного | 6.22 
+  (2 рядк.)
+
+> кілька слів (АБО): "docker kubernetes"
+  title                                                | score
+  -----------------------------------------------------+------
+  Docker для розробника: від Dockerfile до Compose     | 6.73 
+  Kubernetes: Pod, Deployment і Service без магії      | 6.22 
+  Git-стратегії гілкування: trunk-based проти Git Flow | 2.71 
+  CI/CD у GitHub Actions для невеликої команди         | 0.51 
+  Моніторинг сервісу з Prometheus і Grafana            | 0.51 
+  (5 рядк.)
+
+> фраза: "\"агрегаційний конвеєр\""
+  title                                                  | score
+  -------------------------------------------------------+------
+  Агрегаційний конвеєр MongoDB від простого до складного | 12.96
+  Індекси в PostgreSQL: B-tree, GIN і BRIN               | 1.01 
+  Проєктування документної схеми в MongoDB               | 1.01 
+  Реплікація і шардинг: базові поняття                   | 1.01 
+  Коли денормалізація виправдана                         | 1.01 
+  (5 рядк.)
+
+> виключення слова: "тести -jest"
+  title                                           | score
+  ------------------------------------------------+------
+  End-to-end тести з Playwright                   | 6.81 
+  TDD: пишемо тест до коду                        | 2.93 
+  Навантажувальне тестування з k6                 | 2.71 
+  Kubernetes: Pod, Deployment і Service без магії | 2.66 
+  Піраміда тестування на реальному проєкті        | 0.77 
+  (5 рядк.)
+
+> пошук + фільтр за категорією «Безпека»: "паролі"
+  title                                       | score
+  --------------------------------------------+------
+  Зберігання паролів: bcrypt, scrypt і Argon2 | 2.71 
+  Двофакторна автентифікація в застосунку     | 0.51 
+  Фішинг: як розпізнати підробний лист        | 0.51 
+  NoSQL-ін'єкції та як від них захиститися    | 0.51 
+  (4 рядк.)
+
+> пошук у змісті: слово, якого немає в назвах ("токенізація")
+  title                                             | score
+  --------------------------------------------------+------
+  Метрики якості моделей: precision, recall і F1    | 2.71 
+  Підготовка даних для машинного навчання           | 0.51 
+  Класифікація текстів українською мовою            | 0.51 
+  RAG: пошук по власних документах за допомогою LLM | 0.51 
+  (4 рядк.)
+
+> без стемінгу (default_language: none) форми слова розрізняються: "індекси" і "індексів"
+  "індекси":  1 док.
+  "індексів": 0 док.
+  обидві форми одним запитом "індекси індексів індекс": 6 док.
+
+> план запиту $text
+  {plan: TEXT_MATCH(posts_text) <- FETCH <- IXSCAN(posts_text), returned: 3, keysExamined: 3, docsExamined: 3, timeMs: 0}

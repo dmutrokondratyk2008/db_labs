@@ -1,0 +1,42 @@
+﻿
+=== Видалення попередньої версії бази blog_system ===
+  {ok: 1, dropped: blog_system}
+
+=== Колекція users ===
+  {ok: 1}
+
+=== Колекція categories (категорії та теги) ===
+  {ok: 1}
+
+=== Колекція posts ===
+  {ok: 1}
+
+=== Колекція reactions ===
+  {ok: 1}
+
+=== Колекція post_views (патерн Bucket) ===
+  {ok: 1}
+
+=== Колекція post_versions ===
+  {ok: 1}
+
+=== Колекція notifications ===
+  {ok: 1}
+
+=== Колекції бази blog_system і їхні правила валідації ===
+  notifications  required: [user_id, type, post_id, message, read, created_at], strict/error
+  reactions      required: [post_id, user_id, value, created_at], strict/error
+  categories     required: [type, name, slug, created_at], strict/error
+  posts          required: [title, slug, content, author, category, tags, status, comments, statistics, version, created_at, updated_at], strict/error
+  post_versions  required: [post_id, version, snapshot, edited_by, edited_at], strict/error
+  users          required: [username, email, password_hash, role, status, created_at], strict/error
+  post_views     required: [post_id, month, daily, total], strict/error
+
+=== Перевірка валідації: некоректні документи ===
+  users      роль "moderator" не з переліку       -> відхилено: DocumentValidationFailure
+  users      некоректний email                    -> відхилено: DocumentValidationFailure
+  posts      контент коротший за 100 символів     -> відхилено: DocumentValidationFailure
+  posts      slug з великими літерами і пробілом  -> відхилено: DocumentValidationFailure
+  posts      коментар зі статусом "spam"          -> відхилено: DocumentValidationFailure
+  categories type "rubric" не з переліку          -> відхилено: DocumentValidationFailure
+  reactions  value = 5 (дозволено лише 1 або -1)  -> відхилено: DocumentValidationFailure

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Модерація коментарів</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1 class="page-title">Модерація коментарів</h1>
+    <p class="page-sub">Коментарі читачів потрапляють сюди зі статусом <span class="status-pill pending">pending</span>.
+      Коментарі адміністраторів і автора посту схвалюються автоматично. Схвалювати чи відхиляти може лише адміністратор.</p>
+    <div class="panel" id="who"></div>
+    <div class="panel">
+      <h3 id="qTitle">Черга</h3>
+      <div style="overflow-x:auto"><table class="data"><thead><tr>
+        <th>Надіслано</th><th>Автор</th><th>Пост</th><th>Коментар</th><th></th></tr></thead>
+        <tbody id="queue"></tbody></table></div>
+    </div>
+  </main>
+  <script src="common.js"></script>
+  <script>
+    let me = null;
+    function renderWho() {
+      document.getElementById('who').innerHTML = me && me.role === 'admin'
+        ? `Ви модеруєте як <b>${esc(me.profile.full_name)}</b> (${esc(me.username)}, адміністратор).`
+        : `<span class="status-pill pending">Увага</span> Оберіть у шапці користувача з роллю «адміністратор» (наприклад, Олена Коваленко), щоб змінювати статуси. Зараз: ${me ? esc(me.username) + ' (' + ROLE_UA[me.role] + ')' : 'гість'}.`;
+    }
+    async function load() {
+      if (!me || me.role !== 'admin') {            // черга з текстами коментарів доступна лише адміністратору (сервер повертає 403)
+        document.getElementById('qTitle').textContent = 'Черга модерації доступна лише адміністратору';
+        document.getElementById('queue').innerHTML = '';
+        return;
+      }
+      const list = await api('/moderation/queue');
+      document.getElementById('qTitle').textContent = `Черга: ${list.length} коментарів очікують перевірки`;
+      const admin = me && me.role === 'admin';
+      document.getElementById('queue').innerHTML = list.length ? list.map(x => `<tr>
+        <td>${fmtDate(x.comment.created_at, true)}</td>
+        <td>${esc(x.comment.author.username)}</td>
+        <td><a href="/#${esc(x.post_slug)}">${esc(x.post_title)}</a></td>
+        <td>${x.parent ? `<small class="muted">↩ у відповідь ${esc(x.parent.author)}: «${esc(x.parent.text)}»</small><br>` : ''}${esc(x.comment.text)}</td>
+        <td style="white-space:nowrap"><button class="btn ok small" data-id="${x.comment.comment_id}" data-s="approved" ${admin ? '' : 'disabled'}>Схвалити</button>
+            <button class="btn bad small" data-id="${x.comment.comment_id}" data-s="rejected" ${admin ? '' : 'disabled'}>Відхилити</button></td>
+      </tr>`).join('') : '<tr><td colspan="5" class="empty">Черга порожня 🎉</td></tr>';
+      document.querySelectorAll('#queue [data-id]').forEach(b => b.onclick = async () => {
+        let reason;
+        if (b.dataset.s === 'rejected') { reason = prompt('Причина відхилення:', 'Спам або реклама'); if (reason === null) return; }
+        try {
+          await api('/comments/' + b.dataset.id, { method: 'PATCH', body: { status: b.dataset.s, reason } });
+          toast(b.dataset.s === 'approved' ? 'Коментар схвалено' : 'Коментар відхилено');
+          load();
+        } catch (e) { toast(e.message); }
+      });
+    }
+    (async () => {
+      me = await initHeader('moderation', u => { me = u; renderWho(); load(); });
+      renderWho(); load();
+    })();
+  </script>
+</body>
+</html>

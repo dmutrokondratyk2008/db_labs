@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Блог на MongoDB</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <div class="filters">
+      <div class="search">
+        <label for="q">Повнотекстовий пошук (назва і зміст)</label>
+        <input type="search" id="q" placeholder="Наприклад: docker kubernetes або &quot;агрегаційний конвеєр&quot;">
+      </div>
+      <div>
+        <label for="category">Категорія</label>
+        <select id="category"><option value="">Усі категорії</option></select>
+      </div>
+      <div>
+        <label for="sort">Сортування</label>
+        <select id="sort">
+          <option value="new">Новіші</option><option value="views">Перегляди</option>
+          <option value="rating">Рейтинг</option><option value="comments">Коментарі</option>
+        </select>
+      </div>
+      <div>
+        <label for="near">Поруч з містом</label>
+        <select id="near">
+          <option value="">Будь-де</option>
+          <option value="25.3254,50.7472">Луцьк, 100 км</option>
+          <option value="30.5234,50.4501">Київ, 100 км</option>
+          <option value="24.0297,49.8397">Львів, 100 км</option>
+          <option value="36.2304,49.9935">Харків, 100 км</option>
+        </select>
+      </div>
+      <button class="btn primary" id="newPostBtn" hidden>＋ Новий пост</button>
+    </div>
+    <div class="tagbar" id="tagbar"></div>
+    <div class="resultbar"><span id="resultInfo"></span><span id="cacheInfo" class="muted"></span></div>
+    <div id="postsGrid" class="posts-grid"></div>
+    <div class="pagination" id="pagination"></div>
+  </main>
+
+  <!-- перегляд посту -->
+  <div id="postModal" class="modal"><div class="modal-content">
+    <button class="close-modal" data-close>&times;</button>
+    <div id="postDetails" class="post-full"></div>
+  </div></div>
+
+  <!-- створення / редагування посту -->
+  <div id="formModal" class="modal"><div class="modal-content narrow">
+    <button class="close-modal" data-close>&times;</button>
+    <h2 id="formTitle" style="margin-bottom:14px">Новий пост</h2>
+    <form id="postForm" class="form-grid">
+      <div class="full"><label for="f_title">Назва *</label><input type="text" id="f_title" required minlength="3" maxlength="200"></div>
+      <div><label for="f_category">Категорія *</label><select id="f_category" required></select></div>
+      <div><label for="f_status">Статус</label>
+        <select id="f_status"><option value="published">Опублікувати</option><option value="draft">Чернетка</option></select></div>
+      <div class="full"><label for="f_tags">Теги через кому</label><input type="text" id="f_tags" placeholder="mongodb, nodejs" list="tagList">
+        <datalist id="tagList"></datalist></div>
+      <div class="full"><label for="f_excerpt">Короткий опис</label><input type="text" id="f_excerpt" maxlength="400"></div>
+      <div class="full"><label for="f_content">Текст статті * (не менше 100 символів; абзаци через порожній рядок)</label>
+        <textarea id="f_content" rows="10" required minlength="100"></textarea><small class="muted" id="f_len">0 символів</small></div>
+      <div class="full" id="f_geo_row"><label for="f_city">Геолокація</label>
+        <select id="f_city"><option value="">Без геолокації</option></select></div>
+      <div class="full" id="f_note_row" hidden><label for="f_note">Коментар до редагування</label><input type="text" id="f_note" maxlength="200"></div>
+      <div class="full"><button type="submit" class="btn primary" id="f_submit">Зберегти</button></div>
+    </form>
+    <div class="form-msg" id="formMsg"></div>
+  </div></div>
+
+  <!-- історія версій -->
+  <div id="historyModal" class="modal"><div class="modal-content narrow">
+    <button class="close-modal" data-close>&times;</button>
+    <h2 style="margin-bottom:12px">Історія редагувань</h2>
+    <div id="historyBody"></div>
+  </div></div>
+
+  <script src="common.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

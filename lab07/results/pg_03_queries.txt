@@ -1,0 +1,205 @@
+﻿Pager usage is off.
+SET
+=== Q1. Сторінка посту: пост + автор + категорія + теги + схвалені коментарі (5 JOIN) ===
+                                                           QUERY PLAN                                                           
+--------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop (actual time=0.330..0.332 rows=1 loops=1)
+   Join Filter: (p.category_id = c.category_id)
+   Rows Removed by Join Filter: 7
+   ->  Nested Loop (actual time=0.053..0.053 rows=1 loops=1)
+         ->  Index Scan using posts_slug_key on posts p (actual time=0.042..0.042 rows=1 loops=1)
+               Index Cond: ((slug)::text = 'yuzabiliti-testuvannia-na-piaty-korystuvachakh-1234'::text)
+         ->  Index Scan using users_pkey on users u (actual time=0.008..0.008 rows=1 loops=1)
+               Index Cond: (user_id = p.user_id)
+   ->  Seq Scan on categories c (actual time=0.002..0.003 rows=8 loops=1)
+   SubPlan 1
+     ->  Aggregate (actual time=0.211..0.212 rows=1 loops=1)
+           ->  Sort (actual time=0.204..0.205 rows=3 loops=1)
+                 Sort Key: t.slug
+                 Sort Method: quicksort  Memory: 25kB
+                 ->  Hash Join (actual time=0.095..0.096 rows=3 loops=1)
+                       Hash Cond: (t.tag_id = pt.tag_id)
+                       ->  Seq Scan on tags t (actual time=0.003..0.004 rows=30 loops=1)
+                       ->  Hash (actual time=0.047..0.047 rows=3 loops=1)
+                             Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                             ->  Index Only Scan using post_tags_pkey on post_tags pt (actual time=0.039..0.039 rows=3 loops=1)
+                                   Index Cond: (post_id = p.post_id)
+                                   Heap Fetches: 0
+   SubPlan 2
+     ->  Aggregate (actual time=0.060..0.060 rows=1 loops=1)
+           ->  Nested Loop (actual time=0.030..0.044 rows=3 loops=1)
+                 ->  Index Scan using comments_post_idx on comments cm (actual time=0.021..0.023 rows=3 loops=1)
+                       Index Cond: (post_id = p.post_id)
+                       Filter: ((status)::text = 'approved'::text)
+                       Rows Removed by Filter: 1
+                 ->  Index Scan using users_pkey on users cu (actual time=0.006..0.006 rows=1 loops=3)
+                       Index Cond: (user_id = cm.user_id)
+ Planning Time: 4.171 ms
+ Execution Time: 0.513 ms
+(33 rows)
+
+=== Q2. Стрічка категорії: 10 останніх опублікованих з автором і кількістю коментарів ===
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
+ Limit (actual time=0.102..0.310 rows=10 loops=1)
+   ->  Nested Loop (actual time=0.101..0.308 rows=10 loops=1)
+         ->  Index Scan using posts_cat_status_pub_idx on posts p (actual time=0.041..0.096 rows=10 loops=1)
+               Index Cond: ((category_id = 3) AND ((status)::text = 'published'::text))
+         ->  Memoize (actual time=0.005..0.005 rows=1 loops=10)
+               Cache Key: p.user_id
+               Cache Mode: logical
+               Hits: 0  Misses: 10  Evictions: 0  Overflows: 0  Memory Usage: 2kB
+               ->  Index Scan using users_pkey on users u (actual time=0.002..0.002 rows=1 loops=10)
+                     Index Cond: (user_id = p.user_id)
+         SubPlan 1
+           ->  Aggregate (actual time=0.015..0.015 rows=1 loops=10)
+                 ->  Index Scan using comments_post_idx on comments cm (actual time=0.012..0.014 rows=5 loops=10)
+                       Index Cond: (post_id = p.post_id)
+                       Filter: ((status)::text = 'approved'::text)
+                       Rows Removed by Filter: 1
+ Planning Time: 0.258 ms
+ Execution Time: 0.374 ms
+(18 rows)
+
+=== Q3. Топ-10 авторів за кількістю опублікованих постів ===
+ username | posts | views  
+----------+-------+--------
+ user13   |    71 | 188998
+ user206  |    66 | 166904
+ user194  |    65 | 159533
+ user160  |    65 | 155478
+ user148  |    63 | 164069
+ user175  |    63 | 141223
+ user1    |    62 | 173759
+ user258  |    62 | 171158
+ user56   |    62 | 156916
+ user357  |    62 | 154538
+(10 rows)
+
+                                           QUERY PLAN                                           
+------------------------------------------------------------------------------------------------
+ Limit (actual time=11.087..11.090 rows=10 loops=1)
+   ->  Sort (actual time=11.086..11.088 rows=10 loops=1)
+         Sort Key: (count(*)) DESC, (sum(p.views)) DESC
+         Sort Method: top-N heapsort  Memory: 26kB
+         ->  HashAggregate (actual time=11.016..11.048 rows=400 loops=1)
+               Group Key: u.user_id
+               Batches: 1  Memory Usage: 145kB
+               ->  Hash Join (actual time=0.342..9.602 rows=18054 loops=1)
+                     Hash Cond: (p.user_id = u.user_id)
+                     ->  Seq Scan on posts p (actual time=0.006..7.362 rows=18054 loops=1)
+                           Filter: ((status)::text = 'published'::text)
+                           Rows Removed by Filter: 1946
+                     ->  Hash (actual time=0.325..0.326 rows=2000 loops=1)
+                           Buckets: 2048  Batches: 1  Memory Usage: 106kB
+                           ->  Seq Scan on users u (actual time=0.004..0.145 rows=2000 loops=1)
+ Planning Time: 0.325 ms
+ Execution Time: 11.318 ms
+(17 rows)
+
+=== Q4. Пости з усіма тегами mongodb і nosql (аналог $all) ===
+                                                             QUERY PLAN                                                             
+------------------------------------------------------------------------------------------------------------------------------------
+ Limit (actual time=4.787..4.789 rows=20 loops=1)
+   ->  Sort (actual time=4.786..4.787 rows=20 loops=1)
+         Sort Key: p.published_at DESC
+         Sort Method: top-N heapsort  Memory: 31kB
+         ->  Nested Loop (actual time=1.515..4.628 rows=1199 loops=1)
+               ->  HashAggregate (actual time=1.494..1.761 rows=1323 loops=1)
+                     Group Key: pt.post_id
+                     Filter: (count(*) = 2)
+                     Batches: 1  Memory Usage: 465kB
+                     Rows Removed by Filter: 2588
+                     ->  Nested Loop (actual time=0.035..0.661 rows=5234 loops=1)
+                           ->  Seq Scan on tags t (actual time=0.006..0.009 rows=2 loops=1)
+                                 Filter: ((slug)::text = ANY ('{mongodb,nosql}'::text[]))
+                                 Rows Removed by Filter: 28
+                           ->  Index Only Scan using post_tags_tag_idx on post_tags pt (actual time=0.019..0.189 rows=2617 loops=2)
+                                 Index Cond: (tag_id = t.tag_id)
+                                 Heap Fetches: 0
+               ->  Index Scan using posts_pkey on posts p (actual time=0.002..0.002 rows=1 loops=1323)
+                     Index Cond: (post_id = pt.post_id)
+                     Filter: ((status)::text = 'published'::text)
+                     Rows Removed by Filter: 0
+ Planning Time: 0.764 ms
+ Execution Time: 4.933 ms
+(23 rows)
+
+=== Q5. Повнотекстовий пошук "docker kubernetes" з ранжуванням (аналог $text) ===
+                                            QUERY PLAN                                             
+---------------------------------------------------------------------------------------------------
+ Limit (actual time=24.182..24.185 rows=10 loops=1)
+   ->  Sort (actual time=24.181..24.182 rows=10 loops=1)
+         Sort Key: (ts_rank(posts.tsv, '''docker'' | ''kubernetes'''::tsquery)) DESC
+         Sort Method: top-N heapsort  Memory: 26kB
+         ->  Bitmap Heap Scan on posts (actual time=0.436..23.906 rows=1526 loops=1)
+               Recheck Cond: (tsv @@ '''docker'' | ''kubernetes'''::tsquery)
+               Filter: ((status)::text = 'published'::text)
+               Rows Removed by Filter: 184
+               Heap Blocks: exact=1372
+               ->  Bitmap Index Scan on posts_tsv_idx (actual time=0.230..0.231 rows=1710 loops=1)
+                     Index Cond: (tsv @@ '''docker'' | ''kubernetes'''::tsquery)
+ Planning Time: 0.360 ms
+ Execution Time: 24.247 ms
+(13 rows)
+
+=== Q6. Пагінація: сторінка 50 по 10 + загальна кількість (аналог $facet) ===
+                                     QUERY PLAN                                     
+------------------------------------------------------------------------------------
+ Limit (actual time=28.978..28.982 rows=10 loops=1)
+   ->  Sort (actual time=28.933..28.967 rows=500 loops=1)
+         Sort Key: published_at DESC, post_id DESC
+         Sort Method: top-N heapsort  Memory: 184kB
+         ->  WindowAgg (actual time=24.909..26.836 rows=18054 loops=1)
+               ->  Seq Scan on posts (actual time=0.007..17.209 rows=18054 loops=1)
+                     Filter: ((status)::text = 'published'::text)
+                     Rows Removed by Filter: 1946
+ Planning Time: 0.126 ms
+ Execution Time: 29.356 ms
+(10 rows)
+
+=== Q7. Статистика коментарів: загальна і середня на пост ===
+ posts | comments | avg_per_post | max_per_post 
+-------+----------+--------------+--------------
+ 18054 |   109016 |         6.04 |           12
+(1 row)
+
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=30.897..30.900 rows=1 loops=1)
+   ->  HashAggregate (actual time=28.452..30.317 rows=18054 loops=1)
+         Group Key: p.post_id
+         Batches: 1  Memory Usage: 2065kB
+         ->  Hash Right Join (actual time=2.727..19.292 rows=110420 loops=1)
+               Hash Cond: (cm.post_id = p.post_id)
+               ->  Seq Scan on comments cm (actual time=0.006..4.047 rows=109016 loops=1)
+               ->  Hash (actual time=2.594..2.595 rows=18054 loops=1)
+                     Buckets: 32768  Batches: 1  Memory Usage: 891kB
+                     ->  Index Only Scan using posts_status_pub_idx on posts p (actual time=0.025..1.323 rows=18054 loops=1)
+                           Index Cond: (status = 'published'::text)
+                           Heap Fetches: 0
+ Planning Time: 0.301 ms
+ Execution Time: 31.577 ms
+(14 rows)
+
+=== Q8. Перейменування користувача: в реляційній моделі змінюється 1 рядок ===
+BEGIN
+                                      QUERY PLAN                                      
+--------------------------------------------------------------------------------------
+ Update on users (actual time=0.380..0.380 rows=0 loops=1)
+   ->  Index Scan using users_pkey on users (actual time=0.014..0.015 rows=1 loops=1)
+         Index Cond: (user_id = 7)
+ Planning Time: 0.060 ms
+ Execution Time: 0.468 ms
+(5 rows)
+
+ROLLBACK
+=== Q9. Рекурсивний запит: дерево відповідей на коментар (аналог $graphLookup) ===
+ level | comments 
+-------+----------
+     0 |        2
+     1 |        4
+     2 |        4
+     3 |        2
+(4 rows)
+

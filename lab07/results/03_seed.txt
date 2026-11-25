@@ -1,0 +1,132 @@
+﻿
+=== 1. Користувачі ===
+  {acknowledged: true, insertedIds: 20 шт.}
+  count | role  
+  ------+-------
+  2     | admin 
+  11    | author
+  7     | reader
+  (3 рядк.)
+
+=== 2. Категорії та теги ===
+  {acknowledged: true, insertedIds: 10 шт.}
+  {acknowledged: true, insertedIds: 30 шт.}
+  count | type    
+  ------+---------
+  10    | category
+  30    | tag     
+  (2 рядк.)
+
+=== 3. Пости ===
+  {acknowledged: true, insertedIds: 60 шт.}
+  count | status   
+  ------+----------
+  2     | archived 
+  3     | draft    
+  55    | published
+  (3 рядк.)
+
+=== 4. Коментарі (вбудовані в пости, з відповідями) ===
+  Усього коментарів: 355
+  count | status   | level    
+  ------+----------+----------
+  111   | approved | відповідь
+  219   | approved | коментар 
+  1     | pending  | відповідь
+  15    | pending  | коментар 
+  9     | rejected | коментар 
+  (5 рядк.)
+
+=== 5. Реакції ===
+  {acknowledged: true, insertedIds: 385 шт.}
+
+=== 6. Перегляди (post_views) ===
+  {acknowledged: true, insertedIds: 204 шт.}
+
+=== 7. Сповіщення ===
+  {acknowledged: true, insertedIds: 76 шт.}
+
+=== 8. Перерахунок статистики (patterns Computed, $merge) ===
+  statistics у posts, users, categories оновлено
+
+=== Підсумок наповнення ===
+  users | categories | tags | posts | published | comments | reactions | view_buckets | notifications
+  ------+------------+------+-------+-----------+----------+-----------+--------------+--------------
+  20    | 10         | 30   | 60    | 55        | 355      | 385       | 204          | 76           
+  (1 рядк.)
+
+=== Приклад документа posts (скорочено) ===
+{
+  "_id": ObjectId("6b07334d3bd68f9132ade448"),
+  "title": "Проєктування документної схеми в MongoDB",
+  "slug": "proiektuvannia-dokumentnoi-skhemy-v-mongodb",
+  "excerpt": "Для зв’язку «багато до багатьох» у документній моделі зазвичай зберігають масив посилань.",
+  "author": {
+    "user_id": ObjectId("6b07334d3bd68f9132ade404"),
+    "username": "andrii.bondar",
+    "avatar_url": "https://api.dicebear.com/9.x/initials/svg?seed=%D0%90%D0%BD%D0%B4%D1%80%D1%96%D0%B9%20%D0%91%D0%BE%D0%BD%D0%B4%D0%B0%D1%80"
+  },
+  "category": {
+    "category_id": ObjectId("6b07334d3bd68f9132ade416"),
+    "name": "Бази даних",
+    "slug": "databases"
+  },
+  "tags": [
+    "mongodb",
+    "nosql"
+  ],
+  "status": "published",
+  "comments": [
+    {
+      "comment_id": ObjectId("6b07334d3bd68f9132ade516"),
+      "parent_id": null,
+      "depth": 0,
+      "author": {
+        "user_id": ObjectId("6b07334d3bd68f9132ade401"),
+        "username": "serhii.melnyk"
+      },
+      "text": "Структура статті дуже зручна для читання.",
+      "status": "approved",
+      "likes": 7,
+      "created_at": ISODate("2026-09-21T20:43:05.486Z"),
+      "moderation": {
+        "by": ObjectId("6b07334d3bd68f9132ade401"),
+        "at": ISODate("2026-09-21T20:43:05.486Z")
+      }
+    },
+    {
+      "comment_id": ObjectId("6b07334d3bd68f9132ade517"),
+      "parent_id": null,
+      "depth": 0,
+      "author": {
+        "user_id": ObjectId("6b07334d3bd68f9132ade411"),
+        "username": "sofiia.levchenko"
+      },
+      "text": "Мені бракувало саме такого огляду.",
+      "status": "approved",
+      "likes": 5,
+      "created_at": ISODate("2026-10-31T10:03:05.741Z"),
+      "moderation": {
+        "by": ObjectId("6b07334d3bd68f9132ade401"),
+        "at": ISODate("2026-10-31T16:03:05.741Z")
+      }
+    }
+  ],
+  "statistics": {
+    "views": 918,
+    "likes": 4,
+    "dislikes": 2,
+    "rating": 2,
+    "comments_count": 3
+  },
+  "version": 1,
+  "published_at": ISODate("2026-08-28T15:09:56Z"),
+  "location": {
+    "type": "Point",
+    "place": "Київ",
+    "coordinates": [
+      30.50137,
+      50.45884
+    ]
+  }
+}

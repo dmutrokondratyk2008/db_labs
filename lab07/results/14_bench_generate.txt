@@ -1,0 +1,26 @@
+﻿
+=== Очищення blog_bench ===
+  {ok: 1, dropped: blog_bench}
+
+=== 1. Користувачі: 2000 ===
+
+=== 2. Категорії і теги ===
+
+=== 3. Пости з коментарями: 20000 ===
+  постів: 20000, коментарів: 109016
+
+=== 4. Індекси blog_bench (під тестові запити: як у blog_system, плюс n і comments.author.user_id) ===
+  індексів posts: 11
+
+=== 5. Підсумок ===
+  users | posts | comments | data_mb | storage_mb | index_mb | seconds
+  ------+-------+----------+---------+------------+----------+--------
+  2000  | 20000 | 109016   | 68.8    | 26.9       | 29.1     | 6.5    
+  (1 рядк.)
+  CSV у D:\db_labs\lab07\export:
+    categories.csv  1 КБ
+    comments.csv    14512 КБ
+    posts.csv       32417 КБ
+    post_tags.csv   391 КБ
+    tags.csv        1 КБ
+    users.csv       385 КБ

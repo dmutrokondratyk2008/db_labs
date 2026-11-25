@@ -1,0 +1,62 @@
+﻿Pager usage is off.
+SET
+TRUNCATE TABLE
+Timing is on.
+COPY 2000
+Time: 13.779 ms
+COPY 10
+Time: 1.535 ms
+COPY 30
+Time: 1.322 ms
+COPY 20000
+Time: 3953.067 ms (00:03.953)
+COPY 48989
+Time: 1303.194 ms (00:01.303)
+COPY 109016
+Time: 3528.524 ms (00:03.529)
+Timing is off.
+ setval 
+--------
+   2000
+(1 row)
+
+ setval 
+--------
+     10
+(1 row)
+
+ setval 
+--------
+     30
+(1 row)
+
+ setval 
+--------
+  20000
+(1 row)
+
+ setval 
+--------
+ 109016
+(1 row)
+
+VACUUM
+Кількість рядків і розмір таблиць (дані + індекси + TOAST):
+ table_name |  rows  |  data   | indexes |  total  
+------------+--------+---------+---------+---------
+ posts      |  20000 | 66 MB   | 18 MB   | 84 MB
+ comments   | 109016 | 16 MB   | 6984 kB | 22 MB
+ post_tags  |  48989 | 1768 kB | 2328 kB | 4096 kB
+ users      |   2000 | 432 kB  | 304 kB  | 736 kB
+ categories |     10 | 48 kB   | 48 kB   | 96 kB
+ tags       |     30 | 40 kB   | 32 kB   | 72 kB
+(6 rows)
+
+ data_total | indexes_total | all_total 
+------------+---------------+-----------
+ 84 MB      | 28 MB         | 112 MB
+(1 row)
+
+Перевірка цілісності: зовнішній ключ не дозволяє коментар до неіснуючого посту
+psql:/tmp/lab07sql/02_load_bench.sql:41: ERROR:  insert or update on table "comments" violates foreign key constraint "comments_post_id_fkey"
+DETAIL:  Key (post_id)=(999999) is not present in table "posts".

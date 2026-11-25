@@ -1,0 +1,58 @@
+﻿
+=== Пости автора, новіші першими ===
+
+> db.posts.find({author.user_id: oid..ade402}).sort({created_at: -1})
+  з індексом:  {plan: LIMIT <- FETCH <- IXSCAN(author.user_id_1_created_at_-1), returned: 10, keysExamined: 10, docsExamined: 10, timeMs: 0}
+  без індексу: {plan: SORT <- COLLSCAN, returned: 10, keysExamined: 0, docsExamined: 60, timeMs: 0}
+
+=== Опубліковані пости категорії, новіші першими ===
+
+> db.posts.find({category.category_id: oid..ade416, status: published}).sort({published_at: -1})
+  з індексом:  {plan: LIMIT <- FETCH <- IXSCAN(category.category_id_1_status_1_published_at_-1), returned: 5, keysExamined: 5, docsExamined: 5, timeMs: 0}
+  без індексу: {plan: SORT <- COLLSCAN, returned: 5, keysExamined: 0, docsExamined: 60, timeMs: 0}
+
+=== Опубліковані за жовтень 2026 (діапазон дат) ===
+
+> db.posts.find({status: published, published_at: {$gte: 2026-10-01, $lt: 2026-11-01}}).sort({published_at: -1})
+  з індексом:  {plan: LIMIT <- FETCH <- IXSCAN(status_1_published_at_-1__id_-1), returned: 4, keysExamined: 4, docsExamined: 4, timeMs: 0}
+  без індексу: {plan: SORT <- COLLSCAN, returned: 4, keysExamined: 0, docsExamined: 60, timeMs: 0}
+
+=== Пости з тегом mongodb, новіші першими ===
+
+> db.posts.find({tags: mongodb}).sort({published_at: -1})
+  з індексом:  {plan: LIMIT <- FETCH <- IXSCAN(tags_1_published_at_-1), returned: 9, keysExamined: 9, docsExamined: 9, timeMs: 0}
+  без індексу: {plan: SORT <- COLLSCAN, returned: 9, keysExamined: 0, docsExamined: 60, timeMs: 0}
+
+=== Головна стрічка: 10 останніх опублікованих ===
+
+> db.posts.find({status: published}).sort({published_at: -1, _id: -1})
+  з індексом:  {plan: LIMIT <- FETCH <- IXSCAN(status_1_published_at_-1__id_-1), returned: 10, keysExamined: 10, docsExamined: 10, timeMs: 0}
+  без індексу: {plan: SORT <- COLLSCAN, returned: 10, keysExamined: 0, docsExamined: 60, timeMs: 0}
+
+=== Підсумок: переглянуто документів з індексом і без ===
+  query                                        | returned | keys | docs_ix | docs_collscan | plan                                                                     
+  ---------------------------------------------+----------+------+---------+---------------+--------------------------------------------------------------------------
+  Пости автора, новіші першими                 | 10       | 10   | 10      | 60            | LIMIT <- FETCH <- IXSCAN(author.user_id_1_created_at_-1)                 
+  Опубліковані пости категорії, новіші першими | 5        | 5    | 5       | 60            | LIMIT <- FETCH <- IXSCAN(category.category_id_1_status_1_published_at_-1)
+  Опубліковані за жовтень 2026 (діапазон дат)  | 4        | 4    | 4       | 60            | LIMIT <- FETCH <- IXSCAN(status_1_published_at_-1__id_-1)                
+  Пости з тегом mongodb, новіші першими        | 9        | 9    | 9       | 60            | LIMIT <- FETCH <- IXSCAN(tags_1_published_at_-1)                         
+  Головна стрічка: 10 останніх опублікованих   | 10       | 10   | 10      | 60            | LIMIT <- FETCH <- IXSCAN(status_1_published_at_-1__id_-1)                
+  (5 рядк.)
+
+=== Розмір індексів колекції posts ===
+  index                                           | size_kb
+  ------------------------------------------------+--------
+  _id_                                            | 20     
+  slug_1                                          | 20     
+  author.user_id_1_created_at_-1                  | 20     
+  category.category_id_1_status_1_published_at_-1 | 20     
+  status_1_published_at_-1__id_-1                 | 20     
+  published_at_partial                            | 20     
+  tags_1_published_at_-1                          | 20     
+  posts_text                                      | 104    
+  location_2dsphere                               | 20     
+  comments.comment_id_1                           | 20     
+  comments_pending_partial                        | 20     
+  statistics.rating_-1                            | 20     
+  (12 рядк.)
+  дані: 240 КБ, документів: 60, середній розмір документа: 4097 Б

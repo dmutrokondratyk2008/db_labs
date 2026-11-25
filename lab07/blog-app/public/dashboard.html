@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Аналітика блогу</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1 class="page-title">Аналітична панель</h1>
+    <p class="page-sub">Дані агрегаційних запитів MongoDB (<code>/api/stats/*</code>), відповіді кешуються на 60 секунд.
+      <span id="loadInfo"></span></p>
+    <div class="kpis" id="kpis"></div>
+    <div class="charts">
+      <div class="panel wide"><h3>Перегляди за останні 30 днів (патерн Bucket, post_views)</h3><div class="chart-box"><canvas id="cViews"></canvas></div></div>
+      <div class="panel"><h3>Популярні категорії: кількість постів</h3><div class="chart-box"><canvas id="cCats"></canvas></div></div>
+      <div class="panel"><h3>Топ 10 авторів за кількістю постів</h3><div class="chart-box"><canvas id="cAuthors"></canvas></div></div>
+      <div class="panel"><h3>Коментарі за статусом модерації</h3><div class="chart-box"><canvas id="cStatus"></canvas></div></div>
+      <div class="panel"><h3>Коментарі за місяцями</h3><div class="chart-box"><canvas id="cCommMonth"></canvas></div></div>
+      <div class="panel"><h3>Теги: кількість постів</h3><div class="chart-box"><canvas id="cTags"></canvas></div></div>
+      <div class="panel"><h3>Геолокація постів за містами</h3><div class="chart-box"><canvas id="cGeo"></canvas></div></div>
+      <div class="panel"><h3>Публікації за місяцями</h3><div class="chart-box"><canvas id="cMonths"></canvas></div></div>
+      <div class="panel"><h3>Вкладеність коментарів (глибина дерева)</h3><div class="chart-box"><canvas id="cDepth"></canvas></div></div>
+      <div class="panel wide"><h3>10 найпопулярніших постів</h3><div style="overflow-x:auto"><table class="data" id="topPosts"></table></div></div>
+      <div class="panel wide"><h3>Кеш запитів <button class="btn small" id="refreshCache">Оновити</button> <button class="btn small" id="clearCache">Очистити</button></h3>
+        <div id="cacheStats"></div></div>
+    </div>
+  </main>
+  <script src="/vendor/chart.umd.js"></script>
+  <script src="common.js"></script>
+  <script>
+    const BLUE = '#2563eb', PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#64748b'];
+    Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+    Chart.defaults.color = '#4b5563';
+    const charts = {};
+    const draw = (id, cfg) => { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); };
+    const baseOpts = (extra = {}) => Object.assign({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#eef2f7' } } } }, extra);
+
+    async function loadAll() {
+      const t0 = performance.now();
+      const [ov, views, cats, authors, comm, tags, geo, months, top] = await Promise.all([
+        api('/stats/overview'), api('/stats/views-daily?days=30'), api('/stats/categories'), api('/stats/top-authors'),
+        api('/stats/comments'), api('/stats/tags'), api('/stats/geo'), api('/stats/posts-by-month'), api('/stats/top-posts')]);
+      document.getElementById('loadInfo').textContent = `Завантажено 9 запитів за ${(performance.now() - t0).toFixed(0)} мс.`;
+
+      const k = [['Опубліковано постів', ov.posts], ['Переглядів', ov.views], ['Лайків', ov.likes], ['Дизлайків', ov.dislikes],
+                 ['Коментарів', ov.comments], ['Середньо коментарів на пост', ov.avg_comments_per_post], ['Очікують модерації', ov.pending],
+                 ['Активних авторів', ov.authors]];
+      document.getElementById('kpis').innerHTML = k.map(([l, v]) => `<div class="kpi"><div class="v">${fmtNum(v)}</div><div class="l">${l}</div></div>`).join('');
+
+      draw('cViews', { type: 'line', data: { labels: views.map(v => v.day.slice(5)), datasets: [{ data: views.map(v => v.views), borderColor: BLUE,
+        backgroundColor: 'rgba(37,99,235,.12)', fill: true, tension: .3, pointRadius: 2 }] }, options: baseOpts() });
+      draw('cCats', { type: 'bar', data: { labels: cats.map(c => c.name), datasets: [{ data: cats.map(c => c.posts),
+        backgroundColor: cats.map(c => c.color || BLUE) }] }, options: baseOpts() });
+      draw('cAuthors', { type: 'bar', data: { labels: authors.map(a => a.username), datasets: [{ data: authors.map(a => a.posts), backgroundColor: BLUE }] },
+        options: baseOpts({ indexAxis: 'y', scales: { x: { beginAtZero: true, grid: { color: '#eef2f7' } }, y: { grid: { display: false } } } }) });
+      const stColors = { approved: '#10b981', pending: '#f59e0b', rejected: '#ef4444' };
+      draw('cStatus', { type: 'doughnut', data: { labels: comm.by_status.map(s => s.status), datasets: [{ data: comm.by_status.map(s => s.n),
+        backgroundColor: comm.by_status.map(s => stColors[s.status]) }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
+      draw('cCommMonth', { type: 'bar', data: { labels: comm.by_month.map(m => m.month), datasets: [{ data: comm.by_month.map(m => m.n), backgroundColor: '#8b5cf6' }] }, options: baseOpts() });
+      draw('cTags', { type: 'bar', data: { labels: tags.map(t => t.tag), datasets: [{ data: tags.map(t => t.posts), backgroundColor: '#06b6d4' }] }, options: baseOpts() });
+      draw('cGeo', { type: 'bar', data: { labels: geo.map(g => g.place), datasets: [{ data: geo.map(g => g.posts), backgroundColor: '#f97316' }] }, options: baseOpts() });
+      draw('cMonths', { type: 'line', data: { labels: months.map(m => m.month), datasets: [{ data: months.map(m => m.posts), borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,.15)', fill: true, tension: .3 }] }, options: baseOpts() });
+      draw('cDepth', { type: 'bar', data: { labels: comm.by_depth.map(d => 'рівень ' + d.depth), datasets: [{ data: comm.by_depth.map(d => d.n), backgroundColor: '#64748b' }] },
+        options: baseOpts({ scales: { y: { type: 'logarithmic', grid: { color: '#eef2f7' } }, x: { grid: { display: false } } } }) });
+
+      document.getElementById('topPosts').innerHTML = '<thead><tr><th>#</th><th>Пост</th><th>Автор</th><th class="num">Перегляди</th><th class="num">Лайки</th><th class="num">Рейтинг</th><th class="num">Коментарі</th></tr></thead><tbody>' +
+        top.map((p, i) => `<tr><td>${i + 1}</td><td><a href="/#${esc(p.slug)}">${esc(p.title)}</a></td><td>${esc(p.author.username)}</td>
+          <td class="num">${fmtNum(p.statistics.views)}</td><td class="num">${p.statistics.likes}</td><td class="num">${p.statistics.rating}</td>
+          <td class="num">${p.statistics.comments_count}</td></tr>`).join('') + '</tbody>';
+      loadCache();
+    }
+
+    async function loadCache() {
+      const c = await api('/cache/stats');
+      document.getElementById('cacheStats').innerHTML = `
+        <div class="kpis" style="margin-bottom:12px">
+          <div class="kpi"><div class="v">${c.hit_ratio}%</div><div class="l">влучань (hit ratio)</div></div>
+          <div class="kpi"><div class="v">${c.hits} / ${c.misses}</div><div class="l">hit / miss</div></div>
+          <div class="kpi"><div class="v">${c.avg_hit_ms ?? '-'} мс</div><div class="l">середня відповідь з кешу</div></div>
+          <div class="kpi"><div class="v">${c.avg_miss_ms ?? '-'} мс</div><div class="l">середня відповідь з MongoDB</div></div>
+          <div class="kpi"><div class="v">${c.entries}</div><div class="l">записів (макс. ${c.max_entries})</div></div>
+          <div class="kpi"><div class="v">${c.invalidations}</div><div class="l">інвалідацій після змін</div></div>
+        </div>
+        <table class="data"><thead><tr><th>Ключ (URL)</th><th class="num">Влучань</th><th class="num">TTL, с</th><th>Теги</th></tr></thead><tbody>
+        ${c.top_keys.map(t => `<tr><td><code>${esc(t.key)}</code></td><td class="num">${t.hits}</td><td class="num">${t.ttl_left_s}</td><td>${esc(t.tags.join(', '))}</td></tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    (async () => {
+      await initHeader('dashboard');
+      document.getElementById('refreshCache').onclick = loadCache;
+      document.getElementById('clearCache').onclick = async () => { await api('/cache', { method: 'DELETE' }); loadCache(); toast('Кеш очищено'); };
+      loadAll();
+    })();
+  </script>
+</body>
+</html>

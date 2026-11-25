@@ -12,3 +12,9 @@ lab05/backups/
 lab06/backups/
 lab06/export/
 lab06/replica/data/
+
+# ЛР7: залежності Node.js і CSV-вивантаження для PostgreSQL (генеруються скриптом 14_bench_generate.js)
+lab07/blog-app/node_modules/
+lab07/export/
+lab07/bench-result.txt
+lab07/screenshots-todo.md

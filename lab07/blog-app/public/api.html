@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REST API блогу</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1 class="page-title">RESTful API</h1>
+    <p class="page-sub">Усі відповіді у форматі JSON. Користувач, від імені якого виконується дія, передається заголовком
+      <code>X-User-Id</code> (спрощення замість автентифікації). Коди: 200/201 - успіх, 400 - некоректні дані або порушення
+      <code>$jsonSchema</code>, 403 - немає прав, 404 - не знайдено, 409 - конфлікт (версії, унікальний індекс).</p>
+    <div class="panel">
+      <h3>Спробувати запит</h3>
+      <div style="display:grid;grid-template-columns:110px 1fr auto;gap:8px;margin-bottom:8px">
+        <select id="m"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select>
+        <input type="text" id="u" value="/api/posts?tags=mongodb,nosql&tag_mode=all&limit=3">
+        <button class="btn primary" id="go">Надіслати</button>
+      </div>
+      <textarea id="b" rows="3" placeholder='Тіло запиту JSON, наприклад {"value": 1}'></textarea>
+      <p class="muted" id="meta" style="margin:8px 0"></p>
+      <pre id="out" style="background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;max-height:420px;overflow:auto;font-size:.82rem"></pre>
+    </div>
+    <div class="panel" style="overflow-x:auto">
+      <h3>Маршрути</h3>
+      <table class="data" id="routes"></table>
+    </div>
+  </main>
+  <script src="common.js"></script>
+  <script>
+    const R = [
+      ['GET', '/api/health', 'Стан сервера і підключення до MongoDB', ''],
+      ['GET', '/api/posts', 'Список опублікованих постів з пагінацією ($facet)', 'page, limit, q (повнотекстовий), tags=a,b, tag_mode=all|any, category, author, sort=new|views|rating|comments, lng, lat, km, status=draft|archived|all (автор - власні, адмін - усі)'],
+      ['GET', '/api/posts/:slug', 'Пост з деревом коментарів, моєю реакцією і схожими постами', 'X-User-Id (необов’язково)'],
+      ['POST', '/api/posts', 'Створити пост (автор/адмін)', '{title, content, category, tags, excerpt, status, place, lng, lat}'],
+      ['PUT', '/api/posts/:id', 'Редагувати з версіонуванням і перевіркою версії', '{title?, content?, tags?, category?, status?, expected_version, change_note}'],
+      ['DELETE', '/api/posts/:id', 'Перемістити в архів (м’яке видалення, нова версія)', ''],
+      ['POST', '/api/posts/:id/view', 'Зарахувати перегляд ($inc + бакет post_views)', ''],
+      ['POST', '/api/posts/:id/reactions', 'Лайк / дизлайк / скасування повторним натисканням', '{value: 1 | -1}'],
+      ['GET', '/api/posts/:id/versions', 'Історія редагувань', ''],
+      ['GET', '/api/posts/:id/versions/:v', 'Знімок конкретної версії', ''],
+      ['POST', '/api/posts/:id/versions/:v/restore', 'Відновити версію (створює нову версію)', ''],
+      ['POST', '/api/posts/:id/comments', 'Коментар або відповідь (до 5 рівнів)', '{text, parent_id?}'],
+      ['GET', '/api/moderation/queue', 'Коментарі зі статусом pending (лише admin)', ''],
+      ['PATCH', '/api/comments/:id', 'Модерація (лише admin)', '{status: approved | rejected | pending, reason?}'],
+      ['GET', '/api/notifications', 'Сповіщення поточного користувача', 'unread=1, limit'],
+      ['PATCH', '/api/notifications/read', 'Позначити прочитаними (усі або вибрані)', '{ids?: [...]}'],
+      ['GET', '/api/users', 'Користувачі (без email і хешу пароля)', ''],
+      ['GET', '/api/categories', 'Категорії з лічильниками', ''],
+      ['GET', '/api/tags', 'Теги з лічильниками', ''],
+      ['GET', '/api/geo/near', 'Пости поруч ($geoNear) з відстанню', 'lng, lat, km, limit'],
+      ['GET', '/api/stats/overview', 'Загальна статистика', ''],
+      ['GET', '/api/stats/top-authors', 'Топ авторів', 'limit'],
+      ['GET', '/api/stats/categories', 'Популярні категорії', ''],
+      ['GET', '/api/stats/comments', 'Статистика коментарів', ''],
+      ['GET', '/api/stats/tags', 'Розподіл за тегами', 'limit'],
+      ['GET', '/api/stats/views-daily', 'Перегляди за днями', 'days'],
+      ['GET', '/api/stats/posts-by-month', 'Публікації за місяцями', ''],
+      ['GET', '/api/stats/top-posts', 'Найпопулярніші пости', 'limit'],
+      ['GET', '/api/stats/geo', 'Пости за містами', ''],
+      ['GET', '/api/cache/stats', 'Статистика кешу', ''],
+      ['DELETE', '/api/cache', 'Очистити кеш', '']
+    ];
+    document.getElementById('routes').innerHTML = '<thead><tr><th>Метод</th><th>Шлях</th><th>Опис</th><th>Параметри / тіло</th></tr></thead><tbody>' +
+      R.map(([m, p, d, a]) => `<tr><td><b>${m}</b></td><td><a href="#" data-m="${m}" data-p="${esc(p)}"><code>${esc(p)}</code></a></td><td>${esc(d)}</td><td><small>${esc(a)}</small></td></tr>`).join('') + '</tbody>';
+    document.querySelectorAll('#routes a').forEach(a => a.onclick = e => {
+      e.preventDefault(); document.getElementById('m').value = a.dataset.m; document.getElementById('u').value = a.dataset.p; window.scrollTo({ top: 0 });
+    });
+    document.getElementById('go').onclick = async () => {
+      const m = document.getElementById('m').value, u = document.getElementById('u').value, b = document.getElementById('b').value.trim();
+      const headers = { 'Content-Type': 'application/json' };
+      if (getUserId()) headers['X-User-Id'] = getUserId();
+      const t0 = performance.now();
+      const res = await fetch(u, { method: m, headers, body: m !== 'GET' && b ? b : undefined });
+      const text = await res.text();
+      document.getElementById('meta').textContent = `HTTP ${res.status} · ${(performance.now() - t0).toFixed(1)} мс · X-Cache: ${res.headers.get('X-Cache') || '-'} · X-Response-Time: ${res.headers.get('X-Response-Time') || '-'}`;
+      try { document.getElementById('out').textContent = JSON.stringify(JSON.parse(text), null, 2); } catch { document.getElementById('out').textContent = text; }
+    };
+    initHeader('api');
+  </script>
+</body>
+</html>

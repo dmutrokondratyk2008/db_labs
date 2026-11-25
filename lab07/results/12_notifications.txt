@@ -1,0 +1,65 @@
+﻿
+=== 1. Непрочитані сповіщення за користувачами ===
+  username          | role   | unread | types                                | latest    
+  ------------------+--------+--------+--------------------------------------+-----------
+  kateryna.lysenko  | author | 11     | [comment_reply, new_comment]         | 2026-11-25
+  anna.sydorenko    | reader | 5      | [comment_approved, comment_reply]    | 2026-11-25
+  taras.hnatiuk     | author | 5      | [new_comment, comment_reply]         | 2026-11-25
+  iryna.kuzmenko    | reader | 4      | [comment_approved, comment_reply]    | 2026-11-25
+  ivan.petrenko     | author | 4      | [comment_reply, new_comment]         | 2026-11-25
+  dmytro.savchuk    | author | 2      | [new_comment]                        | 2026-11-23
+  maksym.polishchuk | reader | 2      | [comment_reply, comment_approved]    | 2026-11-25
+  nataliia.romaniuk | author | 2      | [comment_reply, new_comment]         | 2026-11-25
+  roman.zaitsev     | reader | 2      | [comment_approved, comment_rejected] | 2026-11-25
+  sofiia.levchenko  | reader | 1      | [comment_approved]                   | 2026-11-25
+  (10 рядк.)
+
+=== 2. Новий коментар під постом «Індекси в PostgreSQL: B-tree, GIN і BRIN» (автор andrii.bondar) ===
+  непрочитаних у автора до: 0
+  sofiia.levchenko залишила коментар (status: pending)
+  непрочитаних у автора після: 1
+
+> останнє сповіщення автора
+  {type: new_comment, message: sofiia.levchenko прокоментував(-ла) ваш пост «Індекси в PostgreSQL: B-tree, GIN і BRIN» (очікує модерації), read: false, created_at: 2026-11-25}
+
+=== 3. Модерація і відповідь автора -> сповіщення читачці ===
+  непрочитаних у sofiia.levchenko до: 1
+  непрочитаних у sofiia.levchenko після: 3
+  type             | message                                                                                  
+  -----------------+------------------------------------------------------------------------------------------
+  comment_reply    | andrii.bondar відповів(-ла) на ваш коментар до «Індекси в PostgreSQL: B-tree, GIN і BRIN»
+  comment_approved | Ваш коментар до «Індекси в PostgreSQL: B-tree, GIN і BRIN» схвалено                      
+  (2 рядк.)
+
+> автор не отримує сповіщення про власну відповідь
+  сповіщень автору від самого себе: 0
+
+=== 4. Стрічка сповіщень автора (останні 5) і позначення прочитаними ===
+  created_at | type        | from             | post_title                               | read 
+  -----------+-------------+------------------+------------------------------------------+------
+  2026-11-25 | new_comment | sofiia.levchenko | Індекси в PostgreSQL: B-tree, GIN і BRIN | false
+  2026-11-05 | new_comment | serhii.melnyk    | Проєктування документної схеми в MongoDB | true 
+  (2 рядк.)
+
+> db.notifications.updateMany({ user_id, read: false }, { $set: { read: true, read_at: new Date() } })
+  {acknowledged: true, matchedCount: 1, modifiedCount: 1}
+  непрочитаних у автора: 0
+
+> план запиту стрічки (індекс user_id_1_read_1_created_at_-1)
+  {plan: FETCH <- IXSCAN(user_id_1_read_1_created_at_-1), returned: 0, keysExamined: 0, docsExamined: 0, timeMs: 0}
+
+=== 5. Автоматичне очищення: TTL-індекс на read_at (30 днів, лише прочитані) ===
+  {name: read_at_1, key: {read_at: 1}, expireAfterSeconds: 2592000, partialFilterExpression: {read: true}}
+  type             | read  | n 
+  -----------------+-------+---
+  comment_approved | false | 9 
+  comment_rejected | false | 1 
+  comment_reply    | false | 11
+  comment_reply    | true  | 15
+  new_comment      | false | 19
+  new_comment      | true  | 47
+  (6 рядк.)
+
+=== 6. Чому не Change Streams ===
+  db.posts.watch(): Location40573 - The $changeStream stage is only supported on replica sets or mongos
+  на одиночному сервері change streams недоступні, тому сповіщення створюються в addComment()/moderateComment()

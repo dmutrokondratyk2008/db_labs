@@ -1,0 +1,37 @@
+﻿SET
+DROP SCHEMA
+CREATE SCHEMA
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+Схему blog створено:
+  table_name   | indexes | foreign_keys | checks 
+---------------+---------+--------------+--------
+ categories    |       3 |            1 |      1
+ comments      |       4 |            3 |      1
+ notifications |       2 |            3 |      0
+ post_tags     |       2 |            2 |      0
+ post_versions |       1 |            2 |      0
+ post_views    |       1 |            1 |      1
+ posts         |       6 |            2 |      9
+ reactions     |       1 |            2 |      1
+ tags          |       2 |            0 |      0
+ users         |       3 |            0 |      5
+(10 rows)

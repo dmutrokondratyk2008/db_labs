@@ -1,0 +1,54 @@
+﻿
+=== 1. Початковий стан ===
+  {version: 1, title: Node.js і Express: перший API за годину, tags: [nodejs, javascript, mongodb], content_len: 749}
+
+=== 2. Три редагування (перед кожним знімок попередньої версії -> post_versions) ===
+
+> редагування 1: уточнення назви (автор)
+  {version: 2, changed: [title]}
+
+> редагування 2: доповнення тексту і новий тег (автор)
+  {version: 3, changed: [content, tags]}
+
+> редагування 3: виправлення помилки в назві (адміністратор)
+  {version: 4, changed: [title]}
+
+> повторне збереження без змін - нова версія не створюється
+  {version: 4, changed: []}
+  поточний стан: {version: 4, title: Node.js та Express: перший REST API за годину, tags: [nodejs, javascript, mongodb, patterns], content_len: 901}
+
+=== 3. Історія редагувань ===
+  version | title                                        | content_len | tags | changed         | note                        | by              
+  --------+----------------------------------------------+-------------+------+-----------------+-----------------------------+-----------------
+  1       | Node.js і Express: перший API за годину      | 749         | 3    | [title]         | Уточнено назву              | kateryna.lysenko
+  2       | Node.js і Express: перший REST API за годину | 749         | 3    | [content, tags] | Додано розділ про валідацію | kateryna.lysenko
+  3       | Node.js і Express: перший REST API за годину | 901         | 4    | [title]         | Редакторська правка         | olena.kovalenko 
+  (3 рядк.)
+  (у кожному рядку - стан ДО редагування; поточна версія v4 зберігається в самому пості)
+
+=== 4. Отримання конкретної версії ===
+  {version: 2, snapshot: {title: Node.js і Express: перший REST API за годину, tags: [nodejs, javascript, mongodb]}, edited_at: 2026-11-25}
+
+=== 5. Оптимістичне блокування: два редактори відкрили версію одночасно ===
+  обидва редактори відкрили v4
+  редактор А зберіг: {version: 5, changed: [tags]}
+  редактор Б: Конфлікт версій: очікувалась v4, поточна v5
+
+=== 6. Відновлення першої версії (теж створює нову версію - історія не втрачається) ===
+  {version: 6, changed: [title, content]}
+  поточний стан: {version: 6, title: Node.js і Express: перший API за годину, tags: [nodejs, javascript, mongodb], content_len: 749}
+  version | note                        | by               | edited_at 
+  --------+-----------------------------+------------------+-----------
+  1       | Уточнено назву              | kateryna.lysenko | 2026-11-25
+  2       | Додано розділ про валідацію | kateryna.lysenko | 2026-11-25
+  3       | Редакторська правка         | olena.kovalenko  | 2026-11-25
+  4       | Прибрано зайвий тег         | kateryna.lysenko | 2026-11-25
+  5       | Відновлено версію 1         | olena.kovalenko  | 2026-11-25
+  (5 рядк.)
+
+=== 7. Зміни між версіями 1 і поточною (порівняння полів) ===
+  title   однакові
+  excerpt однакові
+  tags    однакові
+  status  однакові
+  content однакові (749 / 749 символів)
